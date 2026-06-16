@@ -102,7 +102,22 @@ SetupTsumePuzzle()     RVA 0x5908DC4
 
 ---
 
-## Dev 系（56件）★
+## Dev 系（57件）
+
+### 構造の概要
+
+57件のうち大半は gRPC の Protobuf 自動生成コード。実体は以下の3層に分かれている。
+
+| 層 | 件数 | 内容 |
+|---|---|---|
+| `Service.*` | 約30件 | Protobuf 生成の Args/Reply メッセージクラス + gRPC スタブ |
+| `Dto.*` | 3件 | サーバー返却データの DTO クラス |
+| `Project.Network.*` | 約20件 | ファサード層（インターフェイス + 実装クラス） |
+| その他 | 2件 | `DeveloperInitiatedCancellation`、外部 SDK メソッド |
+
+実体として意味があるのは **`Project.Network.DeveloperDeviceService`** の9メソッドのみ。
+
+---
 
 ### `Constant.DeveloperRole` enum（dump.cs:510477）
 
@@ -113,10 +128,14 @@ Designer = 5, Planner = 6, Tester = 7,
 Analyst = 8, Viewer = 9
 ```
 
-### `Project.Network.DeveloperDeviceService`（dump.cs:581400）
+同じ enum が `Project.Network.DeveloperRole`（dump.cs:1609096）にも存在する。
+
+---
+
+### `Project.Network.DeveloperDeviceService`（dump.cs:581400）★ 実体
 
 `internal sealed` クラス。全メソッドに RVA あり、バイナリフック可能。
-**ただしサーバー側の Developer 認証が必要な設計のため、クライアントのみでは機能しない。**
+**ただしサーバー側の Developer 認証 (`DeveloperRole`) が必要な設計のため、クライアントのみでは機能しない。**
 
 | メソッド | RVA | 概要 |
 |---|---|---|
@@ -130,21 +149,44 @@ Analyst = 8, Viewer = 9
 | `SetDeveloperPremiumPassAsync` | `0x5B99534` | プレミアムパス強制有効化 |
 | `SetDeveloperUserCurrencyAsync` | `0x5B9964C` | 通貨量指定 |
 
-### `Service.SetDeveloperDummyTimeArgs`（dump.cs:516705）
+---
+
+### `DeveloperDeviceService.DeveloperDeviceServiceClient`（dump.cs:548177）
+
+gRPC の自動生成クライアントスタブ。上の `Project.Network.DeveloperDeviceService` が内部で使用。
+各メソッドに同期版と `Async` 版が存在する（計36メソッド）。
+
+---
+
+### Args クラス（Protobuf 自動生成、RVA 一覧）
+
+各 Args の `Create()` ファクトリと主要フィールドのみ抜粋。
+
+| クラス | Create() RVA | 主要フィールド |
+|---|---|---|
+| `IGetDeveloperListArgs` | `0x5B98D34` | なし |
+| `IGetDeveloperPremiumPassArgs` | `0x5B9D8EC` | なし |
+| `IGrantDeveloperAllCurrenciesArgs` | `0x5B9D944` | なし |
+| `IResetDeveloperMasterVersionArgs` | `0x5B9D99C` | なし |
+| `IResetDeveloperUserCurrencyArgs` | `0x5B9D9F4` | `IReadOnlyList<CurrencyType> currencyTypes` |
+| `ISetDeveloperDummyTimeArgs` | `0x5B9DD04` | `userId`, `isEnabledDummy`, `isFixedDate`, `fixedDate` |
+| `ISetDeveloperMasterVersionArgs` | `0x5B9DE38` | `mergeId`, `masterVersionLifeCycleType` |
+| `ISetDeveloperPremiumPassArgs` | `0x5B9DEBC` | `isPremiumPass`, `expireDays` |
+| `ISetDeveloperUserCurrencyArgs` | `0x5B9DF34` | `currencyType`, `mstCurrencyId`, `amount` |
+
+---
+
+### `Dto.DeveloperStatus`（dump.cs:556070）
 
 ```csharp
-string UserId
-bool   IsEnabledDummy   // ダミー時刻の有効/無効
-bool   IsFixedDate      // 固定日時 or オフセット
-Timestamp FixedDate     // 固定する日時
-```
-
-### `Service.SetDeveloperUserCurrencyArgs`（dump.cs:517546）
-
-```csharp
-CurrencyType CurrencyType
-int MstCurrencyId
-int Amount
+string DeveloperId
+string Mail
+string DeveloperName
+Timestamp LastAuthDate
+RepeatedField<DeveloperRole> Roles
+string MasterVersion
+Timestamp MasterSetDate
+MasterVersionLifeCycleType MasterVersionLifeCycleType
 ```
 
 ### `Dto.DevelopmentEnvironmentStatus`（dump.cs:556291）
@@ -153,6 +195,14 @@ int Amount
 string EnvironmentName   // 環境名 (dev/stg/prod 等)
 string DefaultUrl        // 接続先 URL のデフォルト
 ```
+
+---
+
+### その他
+
+- `DeveloperInitiatedCancellation`（dump.cs:1573147）— `.ctor()` のみのキャンセル例外クラス
+- `UnityEngine.Purchasing.ProductDetailsQueryResponse.IsDeveloperError()` — Google Billing エラー判定
+- `AppsFlyerSDK.AppsFlyeriOS.setAppsFlyerDevKey()` — AppsFlyer SDK の devKey 設定
 
 ---
 
@@ -170,9 +220,10 @@ string DefaultUrl        // 接続先 URL のデフォルト
 | Overlay | 53 | 全て UI コンポーネント、利用価値なし |
 | Test | 7 | `GameTestStarter` が唯一面白い |
 | Cheat | 0 | 存在しない |
-| Dev | 56 | サーバー認証必須で単体では動作しない |
+| Dev | 57 | 実体は9メソッドのみ、サーバー認証必須 |
 | God | 0 | 存在しない |
 
 「チートモード」相当の機能は `DeveloperDeviceService` として実装されているが、
 サーバー側の `DeveloperRole` 認証なしでは呼び出せない設計になっている。
-`GameTestStarter` は Unity Editor の開発用ツールがリリースバイナリに残った状態。
+57件という数字のうちほとんどは gRPC Protobuf 自動生成コードであり、
+実際に意味のあるコードは `Project.Network.DeveloperDeviceService` の9メソッドに集約される。
