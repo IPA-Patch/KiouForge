@@ -3,4 +3,4 @@
 	url = https://github.com/IPA-Patch/Shared.git
 [submodule "Sources/Common"]
 	path = Sources/Common
-	url = https://github.com/IPA-Patch/Common.git
+	url = https://github.com/IPA-Patch/Chinlan.git
