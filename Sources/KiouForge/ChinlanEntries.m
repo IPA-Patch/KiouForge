@@ -9,7 +9,7 @@
 // ChinlanEntries.m — KiouForge-local glue for the IPA_CHINLAN build.
 //
 // Mirrors the pattern from KiouEditor/ChinlanEntries.m. See that file and
-// Sources/Common/chinlan.h for the full wiring explanation.
+// Sources/Chinlan/chinlan.h for the full wiring explanation.
 //
 // Adding a new hook: add its slot to ChinlanSites.h, add a
 // KFPublish*Slots() extern to Internal.h, and add a call here in

@@ -37,8 +37,8 @@ THEOS_DEVICE_IP          := 192.168.0.49
 include $(THEOS)/makefiles/common.mk
 
 $(TWEAK_NAME)_FILES      := $(shell find $(TWEAK_SOURCES_DIR) -name '*.m' -o -name '*.c' -o -name '*.mm' -o -name '*.cpp')
-$(TWEAK_NAME)_FILES      += Sources/Common/logging.m
-$(TWEAK_NAME)_FILES      += Sources/Common/chinlan.m
+$(TWEAK_NAME)_FILES      += Sources/Chinlan/logging.m
+$(TWEAK_NAME)_FILES      += Sources/Chinlan/chinlan.m
 
 BUILD_COMMIT             ?= $(shell git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)
 
@@ -57,7 +57,7 @@ THEOS_PACKAGE_BASE_VERSION := $(KIOU_FORGE_DEB_VERSION)
 $(TWEAK_NAME)_CFLAGS     := -fobjc-arc -Wno-unused-function \
                             -D$(BUILD_COMMIT_DEFINE)=\"$(BUILD_COMMIT)\" \
                             -DKIOU_FORGE_VERSION=\"$(KIOU_FORGE_VERSION)\" \
-                            -ISources/Common -I$(TWEAK_SOURCES_DIR)
+                            -ISources/Chinlan -I$(TWEAK_SOURCES_DIR)
 $(TWEAK_NAME)_FRAMEWORKS := Foundation UIKit
 
 ifeq ($(CHINLAN),1)
