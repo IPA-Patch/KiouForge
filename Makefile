@@ -5,7 +5,7 @@
 #   make            — JB rootless .deb (MSHookFunction via libsubstrate)
 #   make package    — same, packaged
 #   make jailed     — Dobby-static .dylib for Sideloadly injection (iOS 13+)
-#   make binpatch   — Dobby-static .dylib for the statically-patched IPA path
+#   make chinlan    — Dobby-static .dylib for the statically-patched IPA path
 #                     (iOS 18 sideload; the only mode that survives CSM).
 #   make ipa        — patched IPA assembled from $(DECRYPTED_IPA)
 # ===========================================================================
@@ -38,7 +38,7 @@ include $(THEOS)/makefiles/common.mk
 
 $(TWEAK_NAME)_FILES      := $(shell find $(TWEAK_SOURCES_DIR) -name '*.m' -o -name '*.c' -o -name '*.mm' -o -name '*.cpp')
 $(TWEAK_NAME)_FILES      += Sources/Common/logging.m
-$(TWEAK_NAME)_FILES      += Sources/Common/binpatch.m
+$(TWEAK_NAME)_FILES      += Sources/Common/chinlan.m
 
 BUILD_COMMIT             ?= $(shell git rev-parse --short=7 HEAD 2>/dev/null || echo unknown)
 
@@ -60,9 +60,9 @@ $(TWEAK_NAME)_CFLAGS     := -fobjc-arc -Wno-unused-function \
                             -ISources/Common -I$(TWEAK_SOURCES_DIR)
 $(TWEAK_NAME)_FRAMEWORKS := Foundation UIKit
 
-ifeq ($(BINPATCH),1)
+ifeq ($(CHINLAN),1)
     JAILED                   := 1
-    $(TWEAK_NAME)_CFLAGS     += -DIPA_BINPATCH=1 -DIPA_LOG_TO_DOCUMENTS=1
+    $(TWEAK_NAME)_CFLAGS     += -DIPA_CHINLAN=1 -DIPA_LOG_TO_DOCUMENTS=1
 endif
 
 ifeq ($(JAILED),1)
@@ -88,19 +88,19 @@ jailed::
 	  || otool -L packages/jailed/$(TWEAK_NAME).dylib 2>/dev/null \
 	  || echo "(otool unavailable)"
 
-binpatch::
-	$(MAKE) BINPATCH=1 clean
-	$(MAKE) BINPATCH=1 all
-	$(ECHO_NOTHING)mkdir -p packages/binpatch$(ECHO_END)
-	$(ECHO_NOTHING)cp $(THEOS_OBJ_DIR)/$(TWEAK_NAME).dylib packages/binpatch/$(TWEAK_NAME).dylib$(ECHO_END)
-	@echo "binpatch dylib -> packages/binpatch/$(TWEAK_NAME).dylib"
-	@$(THEOS)/toolchain/linux/iphone/bin/otool -L packages/binpatch/$(TWEAK_NAME).dylib 2>/dev/null \
-	  || otool -L packages/binpatch/$(TWEAK_NAME).dylib 2>/dev/null \
+chinlan::
+	$(MAKE) CHINLAN=1 clean
+	$(MAKE) CHINLAN=1 all
+	$(ECHO_NOTHING)mkdir -p packages/chinlan$(ECHO_END)
+	$(ECHO_NOTHING)cp $(THEOS_OBJ_DIR)/$(TWEAK_NAME).dylib packages/chinlan/$(TWEAK_NAME).dylib$(ECHO_END)
+	@echo "chinlan dylib -> packages/chinlan/$(TWEAK_NAME).dylib"
+	@$(THEOS)/toolchain/linux/iphone/bin/otool -L packages/chinlan/$(TWEAK_NAME).dylib 2>/dev/null \
+	  || otool -L packages/chinlan/$(TWEAK_NAME).dylib 2>/dev/null \
 	  || echo "(otool unavailable)"
 
-IPA_DYLIB                := $(CURDIR)/packages/binpatch/$(TWEAK_NAME).dylib
+IPA_DYLIB                := $(CURDIR)/packages/chinlan/$(TWEAK_NAME).dylib
 
-ipa:: binpatch
+ipa:: chinlan
 	@echo "==> assembling patched IPA from $(DECRYPTED_IPA)"
 	@if [ ! -f "$(DECRYPTED_IPA)" ]; then \
 	  echo "error: decrypted IPA missing at $(DECRYPTED_IPA)"; \
