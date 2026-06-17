@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 // ===========================================================================
-// chinlan_sites.h — KiouForge Chinlan slot table.
+// ChinlanSites.h — KiouForge Chinlan slot table.
 //
 // Single source of truth shared between:
 //   * Sources/KiouForge/ChinlanEntries.m

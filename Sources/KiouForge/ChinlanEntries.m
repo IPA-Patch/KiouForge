@@ -11,7 +11,7 @@
 // Mirrors the pattern from KiouEditor/ChinlanEntries.m. See that file and
 // Sources/Common/chinlan.h for the full wiring explanation.
 //
-// Adding a new hook: add its slot to chinlan_sites.h, add a
+// Adding a new hook: add its slot to ChinlanSites.h, add a
 // KFPublish*Slots() extern to Internal.h, and add a call here in
 // kfPublishAll(). The recipe's _SITES table and KIOU_SLOT_COUNT must match.
 // ===========================================================================

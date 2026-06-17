@@ -7,7 +7,7 @@
 // Hook engine selection.
 // ---------------------------------------------------------------------------
 #if IPA_CHINLAN
-#import "chinlan_sites.h"
+#import "ChinlanSites.h"
 #else
 #import "hookengine.h"
 #endif
