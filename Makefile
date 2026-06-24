@@ -22,7 +22,7 @@ TARGET_BUNDLE_ID         := com.neconome.shogi
 # Override on the command line: make ipa TARGET_VERSION=1.0.2
 TARGET_VERSION           ?= 1.0.2
 DECRYPTED_IPA            ?= $(CURDIR)/assets/$(TARGET_VERSION)/Kiou-$(TARGET_VERSION).ipa
-IPA_RECIPE               := recipes
+IPA_RECIPE               := recipes.__init__
 IPA_FRAMEWORK            := UnityFramework
 
 BUILD_COMMIT_DEFINE      := KIOU_FORGE_COMMIT
