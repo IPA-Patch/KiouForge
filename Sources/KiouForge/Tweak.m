@@ -40,15 +40,16 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
               (unsigned long)unityBase, unityName ? unityName : "?"]);
 
 #if IPA_CHINLAN
+    // Publish the slot table and bypass entries before any KFInstall* runs;
+    // the chinlan branch of each installer reads g_kfHookSlot.
     KFChinlanPublish(unityBase);
-#else
+#endif
     KFInstallFrameRateHook(unityBase);
     KFInstallAfkDisableHook(unityBase);
     KFInstallAnalysisTuneHook(unityBase);
     KFInstallKifuObserveHook(unityBase);
     KFInstallAccountObserveHook(unityBase);
     KFInstallGrpcLoggingHook(unityBase);
-#endif
 
     g_unityHooked = YES;
     IPALog(@"=== All KiouForge hooks installed ===");

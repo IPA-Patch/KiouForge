@@ -56,16 +56,6 @@ void KFChinlanPublish(uintptr_t unityBase) {
               @"[Chinlan] bypass table: [0]=%p .. [%d]=%p",
               g_kfBypassEntry[0], KIOU_CAVE_ALLOC_COUNT - 1,
               g_kfBypassEntry[KIOU_CAVE_ALLOC_COUNT - 1]]);
-
-    // Publish all hook slots.
-    KFInstallFrameRateHook(unityBase);
-    KFInstallAfkDisableHook(unityBase);
-    KFInstallAnalysisTuneHook(unityBase);
-    KFInstallKifuObserveHook(unityBase);
-    KFInstallAccountObserveHook(unityBase);
-    KFInstallGrpcLoggingHook(unityBase);
-
-    IPALog(@"[Chinlan] === all slots published ===");
 }
 
 #endif  // IPA_CHINLAN
