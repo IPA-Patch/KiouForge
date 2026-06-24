@@ -75,9 +75,8 @@ extern void *g_kfBypassEntry[KIOU_CAVE_ALLOC_COUNT];
 uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
 
 // ---------------------------------------------------------------------------
-// @generated-begin TARGET_VERSION=1.0.2 BUILD=12
-// Regenerate with: make gen-sites
-// DO NOT edit this block by hand — run gen-sites instead.
+// @version TARGET_VERSION=1.0.2 BUILD=12
+// Edit this block by hand when RVAs change; keep in sync with recipes/v1_0_2.py.
 
 // Cave region start RVA (CAVE_REGION[0] from the active recipe).
 #define KIOU_CAVE_REGION_RVA  0x826F5E8
@@ -119,4 +118,4 @@ uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
 #define KIOU_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT        0x58152BC
 #define KIOU_SITE_RVA_GET_SELF_PROFILE_MOVENEXT     0x5BB99DC
 
-// @generated-end
+// @version-end
