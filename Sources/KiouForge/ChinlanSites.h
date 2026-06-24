@@ -15,7 +15,7 @@
 //
 // CO-EXISTENCE
 // ---------------------------------
-// KiouForge reserves 6 slots (48 B) in UnityFramework __DATA,__bss at
+// KiouForge reserves 11 slots (88 B) in UnityFramework __DATA,__bss at
 // [KIOU_HOOK_SLOT_BASE_RVA, KIOU_HOOK_SLOT_BASE_RVA + KIOU_SLOT_COUNT*8).
 // The patcher's assert_slot_in_bss() validates the range at patch time.
 // KiouForge is designed to be installed standalone; it does not co-exist
@@ -32,7 +32,13 @@ enum {
     KIOU_SLOT_NSS_SETSKILLEVEL          = 3,   // NativeSyncSession.SetSkillLevel
     KIOU_SLOT_NSS_SEARCHFULL            = 4,   // NativeSyncSession.SearchFull (depth)
     KIOU_SLOT_KIFU_OBSERVE              = 5,   // IMatchMode.OnMatchEndAsync x5 (observer)
-    KIOU_SLOT_COUNT                     = 6,
+    // Account switching slots (entry caves — bypass published per-slot)
+    KIOU_SLOT_ACCOUNT_EXISTS                    = 6,   // UserSaveDataExtensions.AccountExists
+    KIOU_SLOT_ACCOUNT_LOGIN_ARGS_CREATE         = 7,   // ILoginArgs.Create
+    KIOU_SLOT_ACCOUNT_REGISTER_USER_ARGS_CREATE = 8,   // IRegisterUserArgs.Create
+    KIOU_SLOT_ACCOUNT_RUN_LOGIN_SEQ_MOVENEXT    = 9,   // RunLoginSequenceAsync.MoveNext
+    KIOU_SLOT_ACCOUNT_GET_SELF_PROFILE_MOVENEXT = 10,  // GetSelfUserProfileAsync.MoveNext
+    KIOU_SLOT_COUNT                             = 11,
 };
 
 // ---------------------------------------------------------------------------
@@ -43,7 +49,7 @@ enum {
 // (one slot above where KKE used to live, to leave room for the observer
 // slot that subsumes KKE's role).
 // ---------------------------------------------------------------------------
-#define KIOU_HOOK_SLOT_BASE_RVA  0x8F90CA8   // 0x8F90CD8 - 6*8
+#define KIOU_HOOK_SLOT_BASE_RVA  0x8F90C80   // 0x8F90CD8 - 11*8
 extern void **g_kfHookSlot;
 
 // ---------------------------------------------------------------------------
