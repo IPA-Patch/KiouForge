@@ -442,6 +442,33 @@ KFUniTaskRet KFHookRunDeleteAccountSeq(void *ct) {
 }
 
 // ===========================================================================
+// Public entry — drive BackToTitleSequence.RunAsync. Called by Settings UI
+// after the user confirms the account-switch dialog so KIOU navigates back
+// to the title scene, re-running AccountExists → LoginAsync with the
+// pending_device_id substitution in effect (no app relaunch needed).
+//
+// BackToTitleSequence.RunAsync(CancellationToken) is a static method —
+// no self pointer, and a default(CancellationToken) is encoded as NULL.
+// ===========================================================================
+typedef KFUniTaskRet (*BackToTitleRunAsync_t)(void *ct);
+
+void KFNavigateToTitleScene(void) {
+    if (g_unityBase == 0) {
+        IPALog(@"[ACCOUNT] KFNavigateToTitleScene: unityBase not yet set");
+        return;
+    }
+    BackToTitleRunAsync_t fn =
+        (BackToTitleRunAsync_t)(g_unityBase + KIOU_KF_SITE_RVA_BACK_TO_TITLE_RUN_ASYNC);
+    @try {
+        (void)fn(NULL);
+        IPALog(@"[ACCOUNT] BackToTitleSequence.RunAsync invoked");
+    } @catch (NSException *e) {
+        IPALog([NSString stringWithFormat:
+                  @"[ACCOUNT] BackToTitleSequence.RunAsync threw: %@", e]);
+    }
+}
+
+// ===========================================================================
 // Installer
 // ===========================================================================
 void KFInstallAccountObserveHook(uintptr_t unityBase) {

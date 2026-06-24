@@ -148,8 +148,14 @@ extern void KFApplyFPS(int32_t fps);
                                             handler:^(UIAlertAction *_) {
         if (uuid.length > 0) KFSwitchAccount(uuid);
         KFSetActiveAccountUserId(userId);
+        // Close the settings modal then let KIOU navigate itself back to the
+        // title scene — that re-runs AccountExists → LoginAsync with the
+        // pending_device_id substitution in effect, no app relaunch needed.
         UIViewController *modalRoot = self.navigationController ?: self;
-        [modalRoot.presentingViewController dismissViewControllerAnimated:YES completion:nil];
+        UIViewController *presenter = modalRoot.presentingViewController;
+        [presenter dismissViewControllerAnimated:YES completion:^{
+            KFNavigateToTitleScene();
+        }];
     }]];
     [self presentViewController:alert animated:YES completion:nil];
 }

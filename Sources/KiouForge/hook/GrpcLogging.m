@@ -49,20 +49,16 @@ static GrpcIl2CppStringNew_t g_GrpcStringNew     = NULL;
 
 // ---------------------------------------------------------------------------
 // Resolve the target userId for the pending device switch.
-// Returns nil if no switch is armed or the account is not found.
+// Returns nil if no switch is armed.
+//
+// We trust active_user_id (set by Settings UI when the user picks an
+// account) rather than reverse-mapping deviceId -> userId via the saved
+// accounts list — the latter falls over when the same uuid is shared by
+// multiple userIds (server re-issued userId on the same deviceId).
 // ---------------------------------------------------------------------------
 static NSString *targetUserIdForPendingDevice(void) {
-    NSString *pendingDevice = KFPendingDeviceId();
-    if (pendingDevice.length == 0) return nil;
-    for (NSDictionary *acc in KFListAccounts()) {
-        NSString *uuid = acc[@"uuid"];
-        if ([uuid isKindOfClass:[NSString class]] &&
-            [uuid isEqualToString:pendingDevice]) {
-            NSString *uid = acc[@"userId"];
-            if ([uid isKindOfClass:[NSString class]]) return uid;
-        }
-    }
-    return nil;
+    if (KFPendingDeviceId().length == 0) return nil;
+    return KFActiveAccountUserId();
 }
 
 // ---------------------------------------------------------------------------

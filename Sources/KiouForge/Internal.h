@@ -89,6 +89,7 @@ enum kiou_kf_entry_slot_id {
 #define KIOU_KF_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT     0x58152BC
 #define KIOU_KF_SITE_RVA_GET_SELF_PROFILE_MOVENEXT  0x5BB99DC
 #define KIOU_KF_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC  0x6082AC0
+#define KIOU_KF_SITE_RVA_BACK_TO_TITLE_RUN_ASYNC    0x5CFC394
 
 // Chinlan dispatcher publishes per-site cave-bypass addresses here so hook
 // bodies can call orig without re-entering the cave.
@@ -142,6 +143,9 @@ void KFInstallAnalysisTuneHook(uintptr_t unityBase);
 void KFInstallKifuObserveHook(uintptr_t unityBase);
 void KFInstallAccountObserveHook(uintptr_t unityBase);
 void KFInstallGrpcLoggingHook(uintptr_t unityBase);
+
+// Drive BackToTitleSequence.RunAsync — used by Settings UI on account switch.
+void KFNavigateToTitleScene(void);
 
 
 // ---------------------------------------------------------------------------
