@@ -52,14 +52,12 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     KFInstallGrpcLoggingHook(unityBase);
 
     g_unityHooked = YES;
-    IPALog(@"=== All KiouForge hooks installed ===");
+    IPALog(@"=== KiouForge: all hooks installed ===");
 }
 
 __attribute__((constructor)) static void init(void) {
     IPALoggingInit("com.neconome.shogi.kiouforge");
-    IPALog([NSString stringWithFormat:
-              @"=== KiouForge %s (%s) loaded ===",
-              KIOU_FORGE_VERSION, KIOU_FORGE_COMMIT]);
+    IPALog(@"=== KiouForge loaded ===");
 
     // Build identity so a stray log file can be matched back to the exact
     // dylib that wrote it. Flavor distinguishes JB (libsubstrate) / jailed
@@ -72,8 +70,9 @@ __attribute__((constructor)) static void init(void) {
     static const char *const kBuildFlavor = "jb";
 #endif
     IPALog([NSString stringWithFormat:
-              @"build commit=%s flavor=%s built=%s %s",
-              KIOU_FORGE_COMMIT, kBuildFlavor, __DATE__, __TIME__]);
+              @"build version=%s commit=%s flavor=%s built=%s %s",
+              KIOU_FORGE_VERSION, KIOU_FORGE_COMMIT, kBuildFlavor,
+              __DATE__, __TIME__]);
 
     // Settings panel (right-edge swipe). Dispatches to main queue internally
     // and retries until the key window is available — safe to call here.
