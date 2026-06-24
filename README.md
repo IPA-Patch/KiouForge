@@ -127,9 +127,12 @@ All values persist between launches.
 
 ## Account Switching
 
-KiouForge hooks the login path to silently record every account that passes
-through `LoginAsync` and persist it to `NSUserDefaults`. The saved list
-survives app updates.
+KIOU itself has **no official account linking** — once you uninstall the app
+or wipe the device, the deviceId is gone and your account is unrecoverable.
+KiouForge fills that gap by recording every account that passes through
+`LoginAsync` and persisting the identifiers to `NSUserDefaults`. The saved
+list survives app updates, and since you can export it, your accounts
+survive **device transfers** too.
 
 **How it works:**
 
@@ -148,6 +151,26 @@ survives app updates.
 
 `distinctId` (TDAnalytics keychain UUID) is intentionally **not** touched
 during a switch — overriding it causes a `-40004` auth failure.
+
+### Export / import
+
+The accounts screen has a **share button** (top right) that writes
+`kf_accounts.json` to a temp file and opens the system share sheet. The
+JSON is plain — each entry has `uuid`, `userName`, `openId`, `userId`,
+`distinctId`, `savedAt`, and an optional `ranks` array.
+
+Use cases:
+
+- **Backup** — save the JSON to Files / iCloud / your Mac before reinstalling.
+- **Device transfer** — export from the old device, then on the new device
+  drop the JSON into `Library/Preferences/<bundle>.plist` (under the
+  `kiou_forge.account.accounts` key) and your saved accounts move with you.
+- **Recovery** — even if KIOU itself loses the deviceId, the UUID stored in
+  your exported JSON can be replayed via the **Active** account list to log
+  back into the original account.
+
+This is the closest thing to "account linking" KIOU has — and it's entirely
+client-side.
 
 ## Compatibility
 
