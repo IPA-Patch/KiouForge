@@ -174,16 +174,32 @@ client-side.
 
 ## Compatibility
 
+KIOU is an online game — it updates frequently and old versions stop working
+server-side. The recommended target is always the **latest supported version**.
+
+### Feature × version matrix
+
+| Feature | 1.0.1 (build 11) | 1.0.2 (build 12) |
+|---|:---:|:---:|
+| FPS Override | ✓ | ✓ |
+| AFK Guard | ✓ | ✓ |
+| Analysis Tune | ✓ | ✓ |
+| Kifu Autosave | ✓ | ✓ |
+| **Account Switching** | — | ✓ |
+
+Account Switching requires hook sites introduced in 1.0.2; the Jailed/JB build
+always targets the **latest** version only (RVAs are pinned at compile time).
+The Patched IPA build selects the recipe at build time via `TARGET_VERSION`.
+
+### Platform
+
 | | |
 |---|---|
-| **KIOU app version** | `1.0.1` (CFBundleVersion 11) and `1.0.2` (CFBundleVersion 12) |
+| **Latest supported KIOU** | `1.0.2` (CFBundleVersion 12) |
 | **KIOU minimum iOS** | 10.0 (`MinimumOSVersion` in app bundle) |
 | **KiouForge minimum iOS** | 13.0 (requires `UIWindowScene`) |
-| **Tested on** | 15.0 – 26, arm64 |
-| **Distribution** | Jailbroken `.deb`, TrollStore-injected jailed `.dylib`, Patched IPA (Sideloadly / AltStore) |
-
-Hook sites are RVA-pinned per build. Use `make ipa TARGET_VERSION=<ver>` to
-target a specific version.
+| **Tested on** | iOS 15.0 – 26, arm64 |
+| **Distribution** | Jailbroken `.deb`, TrollStore jailed `.dylib`, Patched IPA (Sideloadly / AltStore) |
 
 ## Build
 

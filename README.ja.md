@@ -132,15 +132,29 @@ KIOU における「アカウント連携」に最も近い機能であり、す
 
 ## 対応環境
 
+KIOU はオンラインゲームのため頻繁にアップデートされ、古いバージョンはサーバー側で接続を切られます。常に**最新の対応バージョン**を使うことを推奨します。
+
+### 機能 × バージョン対応表
+
+| 機能 | 1.0.1 (build 11) | 1.0.2 (build 12) |
+|---|:---:|:---:|
+| FPS Override | ✓ | ✓ |
+| AFK Guard | ✓ | ✓ |
+| Analysis Tune | ✓ | ✓ |
+| Kifu Autosave | ✓ | ✓ |
+| **アカウント切り替え** | — | ✓ |
+
+アカウント切り替えは 1.0.2 で追加されたフックサイトが必要なため、1.0.1 では非対応です。Jailed / JB ビルドは RVA がコンパイル時に固定されるため、常に**最新バージョンのみ**を対象とします。Patched IPA は `TARGET_VERSION` でビルド時にレシピを選択します。
+
+### プラットフォーム
+
 | | |
 |---|---|
-| **対応 KIOU バージョン** | `1.0.1`（CFBundleVersion 11）および `1.0.2`（CFBundleVersion 12） |
+| **最新対応 KIOU** | `1.0.2`（CFBundleVersion 12） |
 | **KIOU の最低 iOS バージョン** | 10.0（アプリの `MinimumOSVersion`） |
 | **KiouForge の最低 iOS バージョン** | 13.0（`UIWindowScene` が必要） |
-| **動作確認済み** | 15.0 〜 26、arm64 |
+| **動作確認済み** | iOS 15.0 〜 26、arm64 |
 | **配布形式** | JB rootless `.deb`、TrollStore 向け jailed `.dylib`、Patched IPA（Sideloadly / AltStore） |
-
-フックサイトはビルドごとにアドレスが固定されています。特定バージョンを対象にするには `make ipa TARGET_VERSION=<ver>` を使います。
 
 ## ビルド
 
