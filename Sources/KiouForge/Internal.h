@@ -119,8 +119,7 @@ void KFInstallAccountObserveHook(uintptr_t unityBase);
 void KFInstallGrpcLoggingHook(uintptr_t unityBase);
 
 #if IPA_CHINLAN
-void KFChinlanBootstrap(void);
-BOOL KFChinlanPublished(void);
+void KFChinlanPublish(uintptr_t unityBase);
 #endif
 
 // UnityFramework base address captured at install/publish time. Read by the

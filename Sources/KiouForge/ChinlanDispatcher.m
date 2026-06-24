@@ -40,8 +40,6 @@ extern void   KFHookRunLoginSeqMoveNextEntry(void *self);
 extern void   KFHookGetSelfProfileMoveNextEntry(void *self);
 extern void  *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct);
 
-static BOOL g_published = NO;
-
 void KFChinlanPublish(uintptr_t unityBase) {
     g_kfHookSlot = (void **)(unityBase + KIOU_HOOK_SLOT_BASE_RVA);
     IPALog([NSString stringWithFormat:
@@ -68,24 +66,6 @@ void KFChinlanPublish(uintptr_t unityBase) {
     KFInstallGrpcLoggingHook(unityBase);
 
     IPALog(@"[Chinlan] === all slots published ===");
-}
-
-void KFChinlanBootstrap(void) {
-    if (g_published) return;
-
-    uintptr_t unityBase = IPAChinlanFindImage("UnityFramework");
-    if (unityBase == 0) return;
-
-    IPALog([NSString stringWithFormat:
-              @"[Chinlan] UnityFramework base=0x%lx",
-              (unsigned long)unityBase]);
-
-    KFChinlanPublish(unityBase);
-    g_published = YES;
-}
-
-BOOL KFChinlanPublished(void) {
-    return g_published;
 }
 
 #endif  // IPA_CHINLAN
