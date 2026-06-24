@@ -29,11 +29,11 @@
 // this to resolve static il2cpp method pointers by RVA.
 uintptr_t g_kfUnityBase = 0;
 
-#define RVA_AI_END             0x59EA720
-#define RVA_CPUSTREAM_END      0x59F15D4
-#define RVA_LOCAL_END          0x5A046B4
-#define RVA_ONLINE_END         0x5A06158
-#define RVA_RECORDREPLAY_END   0x5A30320
+#define RVA_AI_END             KIOU_SITE_RVA_AIMATMODE_ONMATCHEND
+#define RVA_CPUSTREAM_END      KIOU_SITE_RVA_CPUSTREAMMODE_ONMATCHEND
+#define RVA_LOCAL_END          KIOU_SITE_RVA_LOCALPVPMODE_ONMATCHEND
+#define RVA_ONLINE_END         KIOU_SITE_RVA_ONLINEPVPMODE_ONMATCHEND
+#define RVA_RECORDREPLAY_END   KIOU_SITE_RVA_RECORDREPLAYMODE_ONMATCHEND
 
 // 16-byte UniTask return (see KFUniTaskRet in Internal.h).
 typedef KFUniTaskRet (*OnMatchEndAsync_t)(void *self, void *ct);

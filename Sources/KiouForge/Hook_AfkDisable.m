@@ -16,7 +16,7 @@
 // targets client-side quality-of-life only.
 // ===========================================================================
 
-#define RVA_GAME_ORCHESTRATOR_IS_AFK_ENABLED  0x594A034
+#define RVA_GAME_ORCHESTRATOR_IS_AFK_ENABLED  KIOU_SITE_RVA_GAME_ORCHESTRATOR_IS_AFK
 
 typedef bool (*IsAfkEnabled_t)(void *self);
 

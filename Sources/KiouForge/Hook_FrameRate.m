@@ -24,7 +24,7 @@
 //     presets do not take effect.
 // ===========================================================================
 
-#define RVA_SET_TARGET_FRAMERATE  0x6B718A4
+#define RVA_SET_TARGET_FRAMERATE  KIOU_SITE_RVA_SET_TARGET_FRAMERATE
 
 // IL2CPP ABI for a static method: (value, MethodInfo *mi)
 typedef void (*SetTargetFrameRate_t)(int32_t value, void *mi);

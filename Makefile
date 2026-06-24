@@ -123,7 +123,17 @@ ipa:: chinlan
 	  --input     "$(DECRYPTED_IPA)" \
 	  --output    "$(CURDIR)/packages/ipa/$(basename $(notdir $(DECRYPTED_IPA)))-patched.ipa"
 
-.PHONY: hooks
+GEN_SITES_HEADER := Sources/KiouForge/ChinlanSites.h
+
+gen-sites::
+	@TARGET_VERSION="$(TARGET_VERSION)" \
+	  PYTHONPATH="$(CURDIR):$(CURDIR)/shared" \
+	  $(CURDIR)/.venv/bin/python3 -m tools.gen_chinlan_sites \
+	    --recipe "__init__" \
+	    --header "$(GEN_SITES_HEADER)"
+	@echo "==> ChinlanSites.h @generated block updated (TARGET_VERSION=$(TARGET_VERSION))"
+
+.PHONY: hooks gen-sites
 hooks::
 	git config core.hooksPath scripts
 	@echo "git hooks now resolve under scripts/"
