@@ -63,10 +63,10 @@ extern void **g_kfHookSlot;
 uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
 
 // ---------------------------------------------------------------------------
-// Site RVAs (KIOU 1.0.1 build 11 UnityFramework).
+// Site RVAs (KIOU 1.0.2 build 12 UnityFramework).
 // ---------------------------------------------------------------------------
-#define KIOU_SITE_RVA_SET_TARGET_FRAMERATE      0x6B6B758
-#define KIOU_SITE_RVA_GAME_ORCHESTRATOR_IS_AFK  0x59455D4
-#define KIOU_SITE_RVA_NSS_SETHASHSIZE           0x5D320E0
-#define KIOU_SITE_RVA_NSS_SETSKILLEVEL          0x5D3206C
-#define KIOU_SITE_RVA_NSS_SEARCHFULL            0x5D32178
+#define KIOU_SITE_RVA_SET_TARGET_FRAMERATE      0x6B718A4
+#define KIOU_SITE_RVA_GAME_ORCHESTRATOR_IS_AFK  0x594A034
+#define KIOU_SITE_RVA_NSS_SETHASHSIZE           0x5D379DC
+#define KIOU_SITE_RVA_NSS_SETSKILLEVEL          0x5D37968
+#define KIOU_SITE_RVA_NSS_SEARCHFULL            0x5D37A74

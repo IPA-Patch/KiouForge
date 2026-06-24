@@ -49,9 +49,9 @@
 //      flow should turn the toggle off during live play.
 // ===========================================================================
 
-#define RVA_NSS_SETHASHSIZE    0x5D320E0
-#define RVA_NSS_SETSKILLEVEL   0x5D3206C
-#define RVA_NSS_SEARCHFULL     0x5D32178
+#define RVA_NSS_SETHASHSIZE    0x5D379DC
+#define RVA_NSS_SETSKILLEVEL   0x5D37968
+#define RVA_NSS_SEARCHFULL     0x5D37A74
 
 // IL2CPP instance-method ABI:
 //   void (NativeSyncSession *self, int32_t arg, MethodInfo *mi)

@@ -3,7 +3,7 @@
 // ===========================================================================
 // Hook_AfkDisable.m — Suppress false AFK warnings during long-think sessions.
 //
-//   GameOrchestrator.IsAfkEnabled()   RVA 0x59455D4
+//   GameOrchestrator.IsAfkEnabled()   RVA 0x594A034
 //   Project.Game.Presentation, dump.cs:1211711
 //
 // The orchestrator fires an AFK warning after ~60 s of no input, then
@@ -16,7 +16,7 @@
 // targets client-side quality-of-life only.
 // ===========================================================================
 
-#define RVA_GAME_ORCHESTRATOR_IS_AFK_ENABLED  0x59455D4
+#define RVA_GAME_ORCHESTRATOR_IS_AFK_ENABLED  0x594A034
 
 typedef bool (*IsAfkEnabled_t)(void *self);
 

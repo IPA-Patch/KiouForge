@@ -21,27 +21,27 @@
 // identical; only the KEB* prefix → KF* prefix and the chinlan slot
 // references have changed.
 //
-// Hook sites (KIOU 1.0.1 build 11):
+// Hook sites (KIOU 1.0.2 build 12):
 //
-//   UserSaveDataExtensions.AccountExists   RVA: 0x591E860  (CAVE_ENTRY on chinlan)
-//   ILoginArgs.Create                      RVA: 0x5B9899C  (CAVE_ENTRY on chinlan)
-//   IRegisterUserArgs.Create               RVA: 0x5B98A2C  (CAVE_ENTRY on chinlan)
-//   RunLoginSequenceAsync.MoveNext         RVA: 0x5812534  (CAVE_ENTRY on chinlan)
-//   GetSelfUserProfileAsync.MoveNext       RVA: 0x5BB4774  (CAVE_ENTRY on chinlan)
-//   TitleMenuPopupPresenter.RunResetUserDataSequenceAsync  RVA: 0x5DC6908
-//   TitleMenuPopupPresenter.RunDeleteAccountSequenceAsync  RVA: 0x5DC69B8
+//   UserSaveDataExtensions.AccountExists   RVA: 0x5922CD0  (CAVE_ENTRY on chinlan)
+//   ILoginArgs.Create                      RVA: 0x5B9DC04  (CAVE_ENTRY on chinlan)
+//   IRegisterUserArgs.Create               RVA: 0x5B9DC94  (CAVE_ENTRY on chinlan)
+//   RunLoginSequenceAsync.MoveNext         RVA: 0x58152BC  (CAVE_ENTRY on chinlan)
+//   GetSelfUserProfileAsync.MoveNext       RVA: 0x5BB99DC  (CAVE_ENTRY on chinlan)
+//   TitleMenuPopupPresenter.RunResetUserDataSequenceAsync  RVA: 0x5DCC204
+//   TitleMenuPopupPresenter.RunDeleteAccountSequenceAsync  RVA: 0x5DCC2B4
 // ===========================================================================
 
 // ---------------------------------------------------------------------------
-// RVAs (KIOU 1.0.1 build 11 UnityFramework)
+// RVAs (KIOU 1.0.2 build 12 UnityFramework)
 // ---------------------------------------------------------------------------
-#define KF_RVA_ACCOUNT_EXISTS                0x591E860
-#define KF_RVA_LOGIN_ARGS_CREATE             0x5B9899C
-#define KF_RVA_REGISTER_USER_ARGS_CREATE     0x5B98A2C
-#define KF_RVA_RUN_LOGIN_SEQ_MOVENEXT        0x5812534
-#define KF_RVA_GET_SELF_PROFILE_MOVENEXT     0x5BB4774
-#define KF_RVA_RUN_RESET_USER_DATA_SEQ       0x5DC6908
-#define KF_RVA_RUN_DELETE_ACCOUNT_SEQ        0x5DC69B8
+#define KF_RVA_ACCOUNT_EXISTS                0x5922CD0
+#define KF_RVA_LOGIN_ARGS_CREATE             0x5B9DC04
+#define KF_RVA_REGISTER_USER_ARGS_CREATE     0x5B9DC94
+#define KF_RVA_RUN_LOGIN_SEQ_MOVENEXT        0x58152BC
+#define KF_RVA_GET_SELF_PROFILE_MOVENEXT     0x5BB99DC
+#define KF_RVA_RUN_RESET_USER_DATA_SEQ       0x5DCC204
+#define KF_RVA_RUN_DELETE_ACCOUNT_SEQ        0x5DCC2B4
 
 // ---------------------------------------------------------------------------
 // Field offsets
