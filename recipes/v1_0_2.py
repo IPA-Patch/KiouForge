@@ -9,7 +9,7 @@ from recipes.common import CAVE_ENTRY, CAVE_OBSERVER
 
 BUILD = 12
 
-CAVE_REGION        = (0x8268024, 0x826C000)
+CAVE_REGION        = (0x826F5E8, 0x8274000)
 HOOK_SLOT_BASE_RVA = 0x8F90C80
 
 # fmt: off

@@ -120,7 +120,8 @@ ipa:: chinlan
 	  --recipe    "$(IPA_RECIPE)" \
 	  --framework "$(IPA_FRAMEWORK)" \
 	  --dylib     "$(IPA_DYLIB)" \
-	  --input     "$(DECRYPTED_IPA)"
+	  --input     "$(DECRYPTED_IPA)" \
+	  --output    "$(CURDIR)/packages/ipa/$(basename $(notdir $(DECRYPTED_IPA)))-patched.ipa"
 
 .PHONY: hooks
 hooks::
