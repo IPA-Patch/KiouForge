@@ -1,7 +1,6 @@
 #if IPA_CHINLAN
 
 #import "Internal.h"
-#import "Account_Persistence.h"
 
 // ===========================================================================
 // ChinlanDispatcher — chinlan flavour only.
