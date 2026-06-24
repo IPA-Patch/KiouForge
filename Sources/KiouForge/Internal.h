@@ -8,7 +8,7 @@
 // ---------------------------------------------------------------------------
 #import "ChinlanSites.h"   // KIOU_SITE_RVA_* / KIOU_CAVE_ALLOC_* — always needed
 #if IPA_CHINLAN
-// g_kfHookSlot, g_kfBypassEntry, bypass helpers declared in ChinlanSites.h
+#import "chinlan.h"
 #else
 #import "hookengine.h"
 #endif
