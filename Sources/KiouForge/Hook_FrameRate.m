@@ -55,20 +55,9 @@ void KFApplyFPS(int32_t fps) {
     IPALog([NSString stringWithFormat:@"[FPS] applied %d fps (direct)", fps]);
 }
 
-#ifndef IPA_CHINLAN
 void KFInstallFrameRateHook(uintptr_t unityBase) {
     g_unityBaseForFPS = unityBase;
-    uintptr_t addr = unityBase + RVA_SET_TARGET_FRAMERATE;
-    MSHookFunction((void *)addr,
-                   (void *)HookSetTargetFrameRate,
-                   (void **)&orig_set_targetFrameRate);
-    IPALog([NSString stringWithFormat:
-              @"Application.set_targetFrameRate hooked @0x%lx (base+0x%x) fps=%d",
-              (unsigned long)addr, RVA_SET_TARGET_FRAMERATE, (int)KFTargetFPS()]);
-}
-#else
-void KFPublishFrameRateSlots(uintptr_t unityBase) {
-    g_unityBaseForFPS = unityBase;
+#if IPA_CHINLAN
     g_kfHookSlot[KIOU_SLOT_SET_TARGET_FRAMERATE] =
         (void *)HookSetTargetFrameRate;
     orig_set_targetFrameRate = (SetTargetFrameRate_t)
@@ -79,5 +68,13 @@ void KFPublishFrameRateSlots(uintptr_t unityBase) {
               g_kfHookSlot[KIOU_SLOT_SET_TARGET_FRAMERATE],
               (void *)orig_set_targetFrameRate,
               (int)KFTargetFPS()]);
-}
+#else
+    uintptr_t addr = unityBase + RVA_SET_TARGET_FRAMERATE;
+    MSHookFunction((void *)addr,
+                   (void *)HookSetTargetFrameRate,
+                   (void **)&orig_set_targetFrameRate);
+    IPALog([NSString stringWithFormat:
+              @"Application.set_targetFrameRate hooked @0x%lx (base+0x%x) fps=%d",
+              (unsigned long)addr, RVA_SET_TARGET_FRAMERATE, (int)KFTargetFPS()]);
 #endif
+}

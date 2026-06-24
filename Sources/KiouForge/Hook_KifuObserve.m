@@ -75,14 +75,19 @@ static KFUniTaskRet ThunkRecordReplayEnd(void *self, void *ct) {
     return (KFUniTaskRet){ NULL, NULL };
 }
 
-#ifndef IPA_CHINLAN
 void KFInstallKifuObserveHook(uintptr_t unityBase) {
     g_kfUnityBase = unityBase;
-    // Make sure the output directory is ready before the first match ends.
     NSString *outDir = KFKifEnsureOutputDir();
     IPALog([NSString stringWithFormat:@"[KIFU] output dir = %@",
               outDir ?: @"(failed)"]);
-
+#if IPA_CHINLAN
+    // One slot for all 5 sites — the cave passes mode_index in X2.
+    g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE] = (void *)KFKifuObserveMatchEnd;
+    IPALog([NSString stringWithFormat:
+              @"[CHINLAN] KifuObserve: slot[%d]=%p (handles all 5 IMatchMode sites)",
+              KIOU_SLOT_KIFU_OBSERVE,
+              g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE]]);
+#else
     struct { const char *tag; uintptr_t rva;
              void *thunk; void **origSlot; } entries[] = {
         { "AIMatchMode",      RVA_AI_END,
@@ -104,19 +109,5 @@ void KFInstallKifuObserveHook(uintptr_t unityBase) {
                   entries[i].tag, (unsigned long)addr,
                   (unsigned long)entries[i].rva]);
     }
-}
-#else
-void KFPublishKifuObserveSlots(uintptr_t unityBase) {
-    g_kfUnityBase = unityBase;
-    NSString *outDir = KFKifEnsureOutputDir();
-    IPALog([NSString stringWithFormat:@"[KIFU] output dir = %@",
-              outDir ?: @"(failed)"]);
-
-    // One slot for all 5 sites — the cave passes mode_index in X2.
-    g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE] = (void *)KFKifuObserveMatchEnd;
-    IPALog([NSString stringWithFormat:
-              @"[CHINLAN] KifuObserve: slot[%d]=%p (handles all 5 IMatchMode sites)",
-              KIOU_SLOT_KIFU_OBSERVE,
-              g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE]]);
-}
 #endif
+}

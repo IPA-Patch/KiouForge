@@ -444,11 +444,12 @@ KFUniTaskRet KFHookRunDeleteAccountSeq(void *ct) {
 // ===========================================================================
 // Installer
 // ===========================================================================
-#if !IPA_CHINLAN
 void KFInstallAccountObserveHook(uintptr_t unityBase) {
     if (!g_il2cpp_string_new)
         g_il2cpp_string_new = (Il2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
-
+#if IPA_CHINLAN
+    IPALog(@"[ACCOUNT] chinlan: caves wired; JB-only hooks skipped");
+#else
     struct { const char *tag; uintptr_t rva; void *hook; void **orig; } entries[] = {
         { "UserSaveDataExtensions.AccountExists",
           KF_RVA_ACCOUNT_EXISTS,
@@ -479,7 +480,6 @@ void KFInstallAccountObserveHook(uintptr_t unityBase) {
           (void *)KFHookRunDeleteAccountSeq,
           (void **)&orig_RunDeleteAccountSeq },
     };
-
     for (size_t i = 0; i < sizeof(entries)/sizeof(entries[0]); i++) {
         uintptr_t addr = unityBase + entries[i].rva;
         MSHookFunction((void *)addr, entries[i].hook, entries[i].orig);
@@ -487,12 +487,5 @@ void KFInstallAccountObserveHook(uintptr_t unityBase) {
                   @"[ACCOUNT] hooked %s @0x%lx", entries[i].tag, (unsigned long)addr]);
     }
     IPALog(@"[ACCOUNT] hooks installed");
-}
-#else
-void KFInstallAccountObserveHook(uintptr_t unityBase) {
-    (void)unityBase;
-    if (!g_il2cpp_string_new)
-        g_il2cpp_string_new = (Il2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
-    IPALog(@"[ACCOUNT] chinlan: caves wired; JB-only hooks skipped");
-}
 #endif
+}

@@ -101,38 +101,8 @@ static KFSyncSearchResult HookNSSSearchFull(void *self, void *sfen,
     return empty;
 }
 
-#ifndef IPA_CHINLAN
 void KFInstallAnalysisTuneHook(uintptr_t unityBase) {
-    {
-        uintptr_t addr = unityBase + RVA_NSS_SETHASHSIZE;
-        MSHookFunction((void *)addr,
-                       (void *)HookNSSSetHashSize,
-                       (void **)&orig_NSS_SetHashSize);
-        IPALog([NSString stringWithFormat:
-                  @"NativeSyncSession.SetHashSize hooked @0x%lx hash=%d MB",
-                  (unsigned long)addr, (int)KFAnalysisHashMB()]);
-    }
-    {
-        uintptr_t addr = unityBase + RVA_NSS_SETSKILLEVEL;
-        MSHookFunction((void *)addr,
-                       (void *)HookNSSSetSkillLevel,
-                       (void **)&orig_NSS_SetSkillLevel);
-        IPALog([NSString stringWithFormat:
-                  @"NativeSyncSession.SetSkillLevel hooked @0x%lx skill=%d",
-                  (unsigned long)addr, (int)KFAnalysisSkillLevel()]);
-    }
-    {
-        uintptr_t addr = unityBase + RVA_NSS_SEARCHFULL;
-        MSHookFunction((void *)addr,
-                       (void *)HookNSSSearchFull,
-                       (void **)&orig_NSS_SearchFull);
-        IPALog([NSString stringWithFormat:
-                  @"NativeSyncSession.SearchFull hooked @0x%lx depth=%d",
-                  (unsigned long)addr, (int)KFAnalysisDepth()]);
-    }
-}
-#else
-void KFPublishAnalysisTuneSlots(uintptr_t unityBase) {
+#if IPA_CHINLAN
     g_kfHookSlot[KIOU_SLOT_NSS_SETHASHSIZE] = (void *)HookNSSSetHashSize;
     orig_NSS_SetHashSize = (NSSSetHashSize_t)
         KFResolveOrigTrampoline(unityBase, RVA_NSS_SETHASHSIZE);
@@ -162,5 +132,33 @@ void KFPublishAnalysisTuneSlots(uintptr_t unityBase) {
               (int)KFAnalysisDepth(),
               (int)KFAnalysisHashMB(),
               (int)KFAnalysisSkillLevel()]);
-}
+#else
+    {
+        uintptr_t addr = unityBase + RVA_NSS_SETHASHSIZE;
+        MSHookFunction((void *)addr,
+                       (void *)HookNSSSetHashSize,
+                       (void **)&orig_NSS_SetHashSize);
+        IPALog([NSString stringWithFormat:
+                  @"NativeSyncSession.SetHashSize hooked @0x%lx hash=%d MB",
+                  (unsigned long)addr, (int)KFAnalysisHashMB()]);
+    }
+    {
+        uintptr_t addr = unityBase + RVA_NSS_SETSKILLEVEL;
+        MSHookFunction((void *)addr,
+                       (void *)HookNSSSetSkillLevel,
+                       (void **)&orig_NSS_SetSkillLevel);
+        IPALog([NSString stringWithFormat:
+                  @"NativeSyncSession.SetSkillLevel hooked @0x%lx skill=%d",
+                  (unsigned long)addr, (int)KFAnalysisSkillLevel()]);
+    }
+    {
+        uintptr_t addr = unityBase + RVA_NSS_SEARCHFULL;
+        MSHookFunction((void *)addr,
+                       (void *)HookNSSSearchFull,
+                       (void **)&orig_NSS_SearchFull);
+        IPALog([NSString stringWithFormat:
+                  @"NativeSyncSession.SearchFull hooked @0x%lx depth=%d",
+                  (unsigned long)addr, (int)KFAnalysisDepth()]);
+    }
 #endif
+}

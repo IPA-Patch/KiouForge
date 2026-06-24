@@ -92,8 +92,6 @@ static void swapUserIdHeader(void *request) {
 // ===========================================================================
 // Chinlan entry hook
 // ===========================================================================
-#if IPA_CHINLAN
-
 void *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct) {
     swapUserIdHeader(request);
     typedef void *(*SendAsync_t)(void *, void *, void *);
@@ -102,30 +100,11 @@ void *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct) {
     return bypass ? bypass(self, request, ct) : NULL;
 }
 
-void KFPublishGrpcLoggingSlots(uintptr_t unityBase) {
-    g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC] =
-        (void *)KFHookHttpMsgInvokerSendAsyncEntry;
-    g_HttpHeadersTryAdd =
-        (HttpHeadersTryAdd_t)(unityBase + RVA_HTTPHEADERS_TRYADD);
-    g_HttpHeadersRemove =
-        (HttpHeadersRemove_t)(unityBase + RVA_HTTPHEADERS_REMOVE);
-    if (!g_GrpcStringNew)
-        g_GrpcStringNew =
-            (GrpcIl2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
-    IPALog([NSString stringWithFormat:
-              @"[GRPC] chinlan: slot[%d]=%p tryAdd=%p remove=%p strNew=%p",
-              KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC,
-              g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC],
-              g_HttpHeadersTryAdd, g_HttpHeadersRemove, g_GrpcStringNew]);
-}
-
-#else  // !IPA_CHINLAN
-
 typedef void *(*GenericSendAsync_t)(void *self, void *request, void *ct);
 static GenericSendAsync_t orig_HttpMsgInvokerSendAsync
     __attribute__((unused)) = NULL;
 
-void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct) {
+static void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct) {
     swapUserIdHeader(request);
     return orig_HttpMsgInvokerSendAsync
         ? orig_HttpMsgInvokerSendAsync(self, request, ct)
@@ -140,7 +119,15 @@ void KFInstallGrpcLoggingHook(uintptr_t unityBase) {
     if (!g_GrpcStringNew)
         g_GrpcStringNew =
             (GrpcIl2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
-
+#if IPA_CHINLAN
+    g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC] =
+        (void *)KFHookHttpMsgInvokerSendAsyncEntry;
+    IPALog([NSString stringWithFormat:
+              @"[GRPC] chinlan: slot[%d]=%p tryAdd=%p remove=%p strNew=%p",
+              KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC,
+              g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC],
+              g_HttpHeadersTryAdd, g_HttpHeadersRemove, g_GrpcStringNew]);
+#else
     uintptr_t addr = unityBase + KIOU_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC;
     MSHookFunction((void *)addr,
                    (void *)KFHookHttpMsgInvokerSendAsync,
@@ -148,6 +135,5 @@ void KFInstallGrpcLoggingHook(uintptr_t unityBase) {
     IPALog([NSString stringWithFormat:
               @"[GRPC] hooked HttpMessageInvoker.SendAsync @0x%lx",
               (unsigned long)addr]);
+#endif
 }
-
-#endif  // IPA_CHINLAN

@@ -49,22 +49,16 @@ static inline void writeI32(void *base, uintptr_t off, int32_t val) {
 // Per-module hook installers.
 // ---------------------------------------------------------------------------
 
-#if IPA_CHINLAN
-void KFPublishFrameRateSlots(uintptr_t unityBase);
-void KFPublishAfkDisableSlots(uintptr_t unityBase);
-void KFPublishAnalysisTuneSlots(uintptr_t unityBase);
-void KFPublishKifuObserveSlots(uintptr_t unityBase);
-void KFPublishAccountObserveSlots(uintptr_t unityBase);
-void KFPublishGrpcLoggingSlots(uintptr_t unityBase);
-void KFChinlanBootstrap(void);
-BOOL KFChinlanPublished(void);
-#else
 void KFInstallFrameRateHook(uintptr_t unityBase);
 void KFInstallAfkDisableHook(uintptr_t unityBase);
 void KFInstallAnalysisTuneHook(uintptr_t unityBase);
 void KFInstallKifuObserveHook(uintptr_t unityBase);
 void KFInstallAccountObserveHook(uintptr_t unityBase);
 void KFInstallGrpcLoggingHook(uintptr_t unityBase);
+
+#if IPA_CHINLAN
+void KFChinlanBootstrap(void);
+BOOL KFChinlanPublished(void);
 #endif
 
 // UnityFramework base address captured at install/publish time. Read by the
