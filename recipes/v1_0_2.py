@@ -29,10 +29,10 @@ SITES: list = [
     (5,  0x5A30320, "f85fbca9", CAVE_OBSERVER, 4, "RecordReplayMode.OnMatchEndAsync"),
 
     # --- Account switching entry caves (CAVE_ENTRY) ---
-    (6,  0x5922CD0, "fd7bbfa9", CAVE_ENTRY, None, "UserSaveDataExtensions.AccountExists"),
-    (7,  0x5B9DC04, "f657bda9", CAVE_ENTRY, None, "ILoginArgs.Create"),
-    (8,  0x5B9DC94, "f657bda9", CAVE_ENTRY, None, "IRegisterUserArgs.Create"),
-    (9,  0x58152BC, "ff8302d1", CAVE_ENTRY, None, "AuthServiceExtensions+<RunLoginSequenceAsync>d__1.MoveNext"),
-    (10, 0x5BB99DC, "ff4302d1", CAVE_ENTRY, None, "GameService+<GetSelfUserProfileAsync>d__36.MoveNext"),
+    (6,  0x591E860, "fd7bbfa9", CAVE_ENTRY, None, "UserSaveDataExtensions.AccountExists"),
+    (7,  0x5B9899C, "f657bda9", CAVE_ENTRY, None, "ILoginArgs.Create"),
+    (8,  0x5B98A2C, "f657bda9", CAVE_ENTRY, None, "IRegisterUserArgs.Create"),
+    (9,  0x5812534, "ff8302d1", CAVE_ENTRY, None, "AuthServiceExtensions+<RunLoginSequenceAsync>d__1.MoveNext"),
+    (10, 0x5BB4774, "ff4302d1", CAVE_ENTRY, None, "GameService+<GetSelfUserProfileAsync>d__36.MoveNext"),
 ]
 # fmt: on
