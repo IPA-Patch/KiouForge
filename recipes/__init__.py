@@ -1,20 +1,20 @@
 """KiouForge recipe — entry point for ``tools.patch_macho``.
 
 Selects the active version via the ``TARGET_VERSION`` environment
-variable (default: ``1.0.1``) and re-exports the patch surface that
+variable (default: ``1.0.2``) and re-exports the patch surface that
 ``tools.patch_macho`` and ``tools.verify_sites`` expect:
 
   TARGET_BASENAME, DYLIB_PATH, PLIST_KEYS
-  CAVE_REGION, HOOK_SLOT_BASE_RVA
+  CAVE_REGION, HOOK_SLOT_RVA
   PATCHES, CAVE_PATCHES, _SITES
 
 Adding a new version:
-  1. Obtain the decrypted IPA → assets/<ver>/Kiou-<ver>.ipa
+  1. Run ``/dump`` → assets/<ver>/dump.cs + dump.cs.index.json
   2. Run ``python3 -m tools.verify_sites --recipe recipes --version <old>
-       --index assets/<old>/dump.cs.index.json --ipa assets/<ver>/Kiou-<ver>.ipa``
+       --index assets/<ver>/dump.cs.index.json --ipa assets/<ver>/Kiou-<ver>.ipa``
      to find drifted RVAs.
-  3. Create ``recipes/v<maj>_<min>_<patch>.py`` (copy v1_0_1.py as template,
-     update BUILD, HOOK_SLOT_BASE_RVA if needed, and all SITES RVAs).
+  3. Create ``recipes/v<maj>_<min>_<patch>.py`` (copy v1_0_2.py as template,
+     update BUILD, CAVE_REGION, and all SITES RVAs).
   4. Register it in ``_VERSIONS`` below.
 """
 
@@ -27,6 +27,8 @@ from recipes.common import (
     TARGET_BASENAME,
     DYLIB_PATH,
     PLIST_KEYS,
+    HOOK_IDS,
+    SLOT_COUNT,
     build_exports,
 )
 
@@ -66,11 +68,16 @@ if _module_name is None:
 
 _v = importlib.import_module(_module_name)
 
+# Validate HOOK_IDS covers the full slot table.
+assert len(set(HOOK_IDS.values())) == SLOT_COUNT, (
+    f"HOOK_IDS slot coverage mismatch: expected {SLOT_COUNT} distinct slots"
+)
+
 # ---------------------------------------------------------------------------
 # Public exports consumed by patch_macho / verify_sites
 # ---------------------------------------------------------------------------
 
-CAVE_REGION        = _v.CAVE_REGION
-HOOK_SLOT_BASE_RVA = _v.HOOK_SLOT_BASE_RVA
+CAVE_REGION   = _v.CAVE_REGION
+HOOK_SLOT_RVA = _v.HOOK_SLOT_RVA
 
-PATCHES, CAVE_PATCHES, _SITES = build_exports(_v.SITES, _v.HOOK_SLOT_BASE_RVA)
+PATCHES, CAVE_PATCHES, _SITES = build_exports(_v.SITES, _v.HOOK_SLOT_RVA)
