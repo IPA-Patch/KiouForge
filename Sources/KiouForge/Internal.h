@@ -55,6 +55,7 @@ void KFPublishAfkDisableSlots(uintptr_t unityBase);
 void KFPublishAnalysisTuneSlots(uintptr_t unityBase);
 void KFPublishKifuObserveSlots(uintptr_t unityBase);
 void KFPublishAccountObserveSlots(uintptr_t unityBase);
+void KFPublishGrpcLoggingSlots(uintptr_t unityBase);
 void KFChinlanBootstrap(void);
 BOOL KFChinlanPublished(void);
 #else
@@ -63,6 +64,7 @@ void KFInstallAfkDisableHook(uintptr_t unityBase);
 void KFInstallAnalysisTuneHook(uintptr_t unityBase);
 void KFInstallKifuObserveHook(uintptr_t unityBase);
 void KFInstallAccountObserveHook(uintptr_t unityBase);
+void KFInstallGrpcLoggingHook(uintptr_t unityBase);
 #endif
 
 // UnityFramework base address captured at install/publish time. Read by the

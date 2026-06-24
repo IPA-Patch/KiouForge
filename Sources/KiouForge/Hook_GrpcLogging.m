@@ -1,0 +1,153 @@
+#import "Internal.h"
+#import "Account_Persistence.h"
+#import <dlfcn.h>
+
+// ===========================================================================
+// Hook_GrpcLogging — swap x-user-id gRPC header on account switch.
+//
+// Ported from KiouEngineBridge/Hook_GrpcLogging.m.
+//
+// KIOU's gRPC stack passes an x-user-id request header that identifies the
+// logged-in user.  When KFSwitchAccount arms pending_device_id, LoginArgs
+// sends a different deviceId to the server, but the header still names the
+// previous user — the server rejects with -40004.
+//
+// Fix: CAVE_ENTRY on HttpMessageInvoker.SendAsync (the virtual base that
+// every gRPC call routes through). Before calling orig via bypass, rewrite
+// the header so it matches the account we are switching to.
+//
+// Hook site (KIOU 1.0.2 build 12):
+//   HttpMessageInvoker.SendAsync   RVA: 0x6082AC0   prologue: 000840f9
+//   (This is a vtable thunk — do NOT binpatch; use CAVE_ENTRY via the recipe.)
+//
+// Helper RVAs (same build):
+//   HttpHeaders.TryAddWithoutValidation(string,string)  RVA: 0x608E9B8
+//   HttpHeaders.Remove(string)                          RVA: 0x608EE70
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// RVAs
+// ---------------------------------------------------------------------------
+#define RVA_HTTPHEADERS_TRYADD   0x608E9B8
+#define RVA_HTTPHEADERS_REMOVE   0x608EE70
+
+// ---------------------------------------------------------------------------
+// HttpRequestMessage field offsets (dump.cs line 1540968)
+// ---------------------------------------------------------------------------
+#define OFF_REQ_HEADERS  0x10   // HttpRequestHeaders*
+
+// ---------------------------------------------------------------------------
+// Function pointer types
+// ---------------------------------------------------------------------------
+typedef bool  (*HttpHeadersTryAdd_t)(void *headers, void *name, void *value);
+typedef bool  (*HttpHeadersRemove_t)(void *headers, void *name);
+typedef void *(*GrpcIl2CppStringNew_t)(const char *utf8);
+
+static HttpHeadersTryAdd_t   g_HttpHeadersTryAdd = NULL;
+static HttpHeadersRemove_t   g_HttpHeadersRemove = NULL;
+static GrpcIl2CppStringNew_t g_GrpcStringNew     = NULL;
+
+// ---------------------------------------------------------------------------
+// Resolve the target userId for the pending device switch.
+// Returns nil if no switch is armed or the account is not found.
+// ---------------------------------------------------------------------------
+static NSString *targetUserIdForPendingDevice(void) {
+    NSString *pendingDevice = KFPendingDeviceId();
+    if (pendingDevice.length == 0) return nil;
+    for (NSDictionary *acc in KFListAccounts()) {
+        NSString *uuid = acc[@"uuid"];
+        if ([uuid isKindOfClass:[NSString class]] &&
+            [uuid isEqualToString:pendingDevice]) {
+            NSString *uid = acc[@"userId"];
+            if ([uid isKindOfClass:[NSString class]]) return uid;
+        }
+    }
+    return nil;
+}
+
+// ---------------------------------------------------------------------------
+// Swap x-user-id header to the target account's userId.
+// No-op when no switch is armed or helpers are not yet resolved.
+// ---------------------------------------------------------------------------
+static void swapUserIdHeader(void *request) {
+    if (!request || !g_HttpHeadersTryAdd || !g_HttpHeadersRemove ||
+        !g_GrpcStringNew) return;
+    NSString *targetUserId = targetUserIdForPendingDevice();
+    if (targetUserId.length == 0) return;
+    void *headers = readPtr(request, OFF_REQ_HEADERS);
+    if (!headers) return;
+    void *nameStr  = g_GrpcStringNew("x-user-id");
+    void *valueStr = g_GrpcStringNew(targetUserId.UTF8String);
+    if (!nameStr || !valueStr) return;
+    @try {
+        g_HttpHeadersRemove(headers, nameStr);
+        g_HttpHeadersTryAdd(headers, nameStr, valueStr);
+        IPALog([NSString stringWithFormat:
+                  @"[GRPC] x-user-id swapped → %@", targetUserId]);
+    } @catch (NSException *e) {
+        IPALog([NSString stringWithFormat:@"[GRPC] x-user-id swap threw: %@", e]);
+    }
+}
+
+// ===========================================================================
+// Chinlan entry hook
+// ===========================================================================
+#if IPA_CHINLAN
+
+void *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct) {
+    swapUserIdHeader(request);
+    typedef void *(*SendAsync_t)(void *, void *, void *);
+    SendAsync_t bypass =
+        (SendAsync_t)g_kfBypassEntry[KIOU_CAVE_ALLOC_HTTPMSGINVOKER_SEND_ASYNC];
+    return bypass ? bypass(self, request, ct) : NULL;
+}
+
+void KFPublishGrpcLoggingSlots(uintptr_t unityBase) {
+    g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC] =
+        (void *)KFHookHttpMsgInvokerSendAsyncEntry;
+    g_HttpHeadersTryAdd =
+        (HttpHeadersTryAdd_t)(unityBase + RVA_HTTPHEADERS_TRYADD);
+    g_HttpHeadersRemove =
+        (HttpHeadersRemove_t)(unityBase + RVA_HTTPHEADERS_REMOVE);
+    if (!g_GrpcStringNew)
+        g_GrpcStringNew =
+            (GrpcIl2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
+    IPALog([NSString stringWithFormat:
+              @"[GRPC] chinlan: slot[%d]=%p tryAdd=%p remove=%p strNew=%p",
+              KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC,
+              g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC],
+              g_HttpHeadersTryAdd, g_HttpHeadersRemove, g_GrpcStringNew]);
+}
+
+#else  // !IPA_CHINLAN
+
+typedef void *(*GenericSendAsync_t)(void *self, void *request, void *ct);
+static GenericSendAsync_t orig_HttpMsgInvokerSendAsync
+    __attribute__((unused)) = NULL;
+
+void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct) {
+    swapUserIdHeader(request);
+    return orig_HttpMsgInvokerSendAsync
+        ? orig_HttpMsgInvokerSendAsync(self, request, ct)
+        : NULL;
+}
+
+void KFInstallGrpcLoggingHook(uintptr_t unityBase) {
+    g_HttpHeadersTryAdd =
+        (HttpHeadersTryAdd_t)(unityBase + RVA_HTTPHEADERS_TRYADD);
+    g_HttpHeadersRemove =
+        (HttpHeadersRemove_t)(unityBase + RVA_HTTPHEADERS_REMOVE);
+    if (!g_GrpcStringNew)
+        g_GrpcStringNew =
+            (GrpcIl2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
+
+    uintptr_t addr = unityBase + KIOU_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC;
+    MSHookFunction((void *)addr,
+                   (void *)KFHookHttpMsgInvokerSendAsync,
+                   (void **)&orig_HttpMsgInvokerSendAsync);
+    IPALog([NSString stringWithFormat:
+              @"[GRPC] hooked HttpMessageInvoker.SendAsync @0x%lx",
+              (unsigned long)addr]);
+}
+
+#endif  // IPA_CHINLAN

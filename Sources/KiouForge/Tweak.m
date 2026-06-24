@@ -55,6 +55,7 @@ static void installUnityHooks(void) {
     KFInstallAnalysisTuneHook(unityBase);
     KFInstallKifuObserveHook(unityBase);
     KFInstallAccountObserveHook(unityBase);
+    KFInstallGrpcLoggingHook(unityBase);
 
     g_unityHooked = YES;
     IPALog(@"=== All KiouForge hooks installed ===");

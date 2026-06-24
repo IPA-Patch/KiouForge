@@ -85,9 +85,10 @@ HOOK_IDS: dict[str, int] = {
     "KIOU_KF_HOOK_REGISTER_USER_ARGS_CREATE":      8,
     "KIOU_KF_HOOK_RUN_LOGIN_SEQ_MOVENEXT":         9,
     "KIOU_KF_HOOK_GET_SELF_PROFILE_MOVENEXT":     10,
+    "KIOU_KF_HOOK_HTTPMSGINVOKER_SEND_ASYNC":     11,
 }
 
-SLOT_COUNT = 11
+SLOT_COUNT = 12
 
 # Observer-only: hook_id_name → KiouMatchMode index passed in W2.
 OBSERVER_AUX: dict[str, int] = {

@@ -38,7 +38,8 @@ enum {
     KIOU_SLOT_ACCOUNT_REGISTER_USER_ARGS_CREATE = 8,   // IRegisterUserArgs.Create
     KIOU_SLOT_ACCOUNT_RUN_LOGIN_SEQ_MOVENEXT    = 9,   // RunLoginSequenceAsync.MoveNext
     KIOU_SLOT_ACCOUNT_GET_SELF_PROFILE_MOVENEXT = 10,  // GetSelfUserProfileAsync.MoveNext
-    KIOU_SLOT_COUNT                             = 11,
+    KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC         = 11,  // HttpMessageInvoker.SendAsync (gRPC header swap)
+    KIOU_SLOT_COUNT                             = 12,
 };
 
 // ---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ enum {
 // (one slot above where KKE used to live, to leave room for the observer
 // slot that subsumes KKE's role).
 // ---------------------------------------------------------------------------
-#define KIOU_HOOK_SLOT_BASE_RVA  0x8F90C80   // 0x8F90CD8 - 11*8
+#define KIOU_HOOK_SLOT_BASE_RVA  0x8F90C78   // 0x8F90CD8 - 12*8
 extern void **g_kfHookSlot;
 
 // ---------------------------------------------------------------------------
@@ -66,7 +67,7 @@ extern void **g_kfHookSlot;
 // Pre-computed bypass table — one entry per cave allocation slot.
 // Populated by kfPublishAll(); hook bodies read from here (mirrors KEB's g_inject_entry).
 // Index with KIOU_CAVE_ALLOC_* constants.
-#define KIOU_CAVE_ALLOC_COUNT  15
+#define KIOU_CAVE_ALLOC_COUNT  16
 extern void *g_kfBypassEntry[KIOU_CAVE_ALLOC_COUNT];
 
 // ---------------------------------------------------------------------------
@@ -100,6 +101,7 @@ uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
 #define KIOU_CAVE_ALLOC_REGISTER_USER_ARGS_CREATE     12
 #define KIOU_CAVE_ALLOC_RUN_LOGIN_SEQ_MOVENEXT        13
 #define KIOU_CAVE_ALLOC_GET_SELF_PROFILE_MOVENEXT     14
+#define KIOU_CAVE_ALLOC_HTTPMSGINVOKER_SEND_ASYNC     15
 
 // Site RVAs — first instruction of each hook site.
 #define KIOU_SITE_RVA_SET_TARGET_FRAMERATE          0x6B718A4
@@ -117,5 +119,6 @@ uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
 #define KIOU_SITE_RVA_REGISTER_USER_ARGS_CREATE     0x5B9DC94
 #define KIOU_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT        0x58152BC
 #define KIOU_SITE_RVA_GET_SELF_PROFILE_MOVENEXT     0x5BB99DC
+#define KIOU_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC     0x6082AC0
 
 // @version-end

@@ -34,5 +34,8 @@ SITES: list = [
     (0x5B9DC94, "f657bda9", "KIOU_KF_HOOK_REGISTER_USER_ARGS_CREATE", CAVE_ENTRY, "IRegisterUserArgs.Create"),
     (0x58152BC, "ff8302d1", "KIOU_KF_HOOK_RUN_LOGIN_SEQ_MOVENEXT",    CAVE_ENTRY, "AuthServiceExtensions+<RunLoginSequenceAsync>d__1.MoveNext"),
     (0x5BB99DC, "ff4302d1", "KIOU_KF_HOOK_GET_SELF_PROFILE_MOVENEXT", CAVE_ENTRY, "GameService+<GetSelfUserProfileAsync>d__36.MoveNext"),
+
+    # --- gRPC header swap (CAVE_ENTRY) ---
+    (0x6082AC0, "000840f9", "KIOU_KF_HOOK_HTTPMSGINVOKER_SEND_ASYNC", CAVE_ENTRY, "HttpMessageInvoker.SendAsync"),
 ]
 # fmt: on

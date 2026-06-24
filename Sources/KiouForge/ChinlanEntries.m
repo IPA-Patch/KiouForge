@@ -16,6 +16,7 @@ extern void  *KFHookLoginArgsCreateEntry(void *deviceId, void *distinctId);
 extern void  *KFHookRegisterUserArgsCreateEntry(void *userName, void *distinctId);
 extern void   KFHookRunLoginSeqMoveNextEntry(void *self);
 extern void   KFHookGetSelfProfileMoveNextEntry(void *self);
+extern void  *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct);
 
 // ===========================================================================
 // ChinlanEntries.m — KiouForge-local glue for the IPA_CHINLAN build.
@@ -60,7 +61,8 @@ static void kfPublishAll(uintptr_t unityBase) {
     KFPublishAfkDisableSlots(unityBase);
     KFPublishAnalysisTuneSlots(unityBase);
     KFPublishKifuObserveSlots(unityBase);
-    KFPublishAccountObserveSlots(unityBase);  // account switching entry slots
+    KFPublishAccountObserveSlots(unityBase);
+    KFPublishGrpcLoggingSlots(unityBase);
 }
 
 void KFPublishAccountObserveSlots(uintptr_t unityBase) {
