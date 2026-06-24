@@ -15,65 +15,91 @@
 // ---------------------------------------------------------------------------
 // Chinlan slot table — keep in sync with recipes/v1_0_2.py.
 // ---------------------------------------------------------------------------
-enum {
-    KIOU_SLOT_SET_TARGET_FRAMERATE              = 0,
-    KIOU_SLOT_GAME_ORCHESTRATOR_IS_AFK          = 1,
-    KIOU_SLOT_NSS_SETHASHSIZE                   = 2,
-    KIOU_SLOT_NSS_SETSKILLEVEL                  = 3,
-    KIOU_SLOT_NSS_SEARCHFULL                    = 4,
-    KIOU_SLOT_KIFU_OBSERVE                      = 5,
-    KIOU_SLOT_ACCOUNT_EXISTS                    = 6,
-    KIOU_SLOT_ACCOUNT_LOGIN_ARGS_CREATE         = 7,
-    KIOU_SLOT_ACCOUNT_REGISTER_USER_ARGS_CREATE = 8,
-    KIOU_SLOT_ACCOUNT_RUN_LOGIN_SEQ_MOVENEXT    = 9,
-    KIOU_SLOT_ACCOUNT_GET_SELF_PROFILE_MOVENEXT = 10,
-    KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC         = 11,
-    KIOU_SLOT_COUNT                             = 12,
+
+// Single observer-dispatcher slot. Every CAVE_OBSERVER cave loads this
+// pointer, BLRs it with W6 = hook_id, and routes through dispatch_one.
+#define KIOU_KF_HOOK_SLOT_RVA            0x8F90C80
+
+// Entry-cave slot table. Slot N at +N*8 holds the function pointer the
+// CAVE_ENTRY cave BLRs directly (no dispatcher).
+#define KIOU_KF_ENTRY_SLOT_BASE_RVA      0x091E91B8
+
+// Cave geometry — mirrors recipes/common.py.
+#define KIOU_KF_CAVE_REGION_START        0x826F5E8
+#define KIOU_KF_CAVE_SIZE                84
+#define KIOU_KF_CAVE_BYPASS_OFFSET       (KIOU_KF_CAVE_SIZE - 8)
+
+// Hook id enum — one row per cave site. CAVE_OBSERVER caves embed this id
+// in the cave's MOVZ W6,#imm so dispatch_one can switch on it. CAVE_ENTRY
+// caves don't dispatch by id, but they still get an enum entry so the
+// bypass index (cave allocation order) matches the enum value.
+enum kiou_kf_hook_id {
+    // Entry caves (route through entry slot table)
+    KIOU_KF_HOOK_SET_TARGET_FRAMERATE = 0,
+    KIOU_KF_HOOK_NSS_SETHASHSIZE,
+    KIOU_KF_HOOK_NSS_SETSKILLEVEL,
+    KIOU_KF_HOOK_NSS_SEARCHFULL,
+    KIOU_KF_HOOK_ACCOUNT_EXISTS,
+    KIOU_KF_HOOK_LOGIN_ARGS_CREATE,
+    KIOU_KF_HOOK_REGISTER_USER_ARGS_CREATE,
+    KIOU_KF_HOOK_RUN_LOGIN_SEQ_MOVENEXT,
+    KIOU_KF_HOOK_GET_SELF_PROFILE_MOVENEXT,
+    KIOU_KF_HOOK_HTTPMSGINVOKER_SEND_ASYNC,
+    // Observer caves (routed by dispatch_one's switch)
+    KIOU_KF_HOOK_KIFU_AI_END,
+    KIOU_KF_HOOK_KIFU_CPUSTREAM_END,
+    KIOU_KF_HOOK_KIFU_LOCAL_END,
+    KIOU_KF_HOOK_KIFU_ONLINE_END,
+    KIOU_KF_HOOK_KIFU_REPLAY_END,
+
+    KIOU_KF_HOOK__COUNT,
 };
 
-#define KIOU_HOOK_SLOT_BASE_RVA          0x8F90C78   // 0x8F90CD8 - 12*8
-#define KIOU_CHINLAN_CAVE_PAYLOAD_SIZE   84
-#define KIOU_CHINLAN_CAVE_BYPASS_OFFSET  (KIOU_CHINLAN_CAVE_PAYLOAD_SIZE - 8)
-#define KIOU_CAVE_ALLOC_COUNT            16
-#define KIOU_CAVE_REGION_RVA             0x826F5E8
+// Entry-slot enum — one per CAVE_ENTRY row. Slot N's function pointer
+// lives at unityBase + KIOU_KF_ENTRY_SLOT_BASE_RVA + N*8.
+enum kiou_kf_entry_slot_id {
+    KIOU_KF_ENTRY_SLOT_SET_TARGET_FRAMERATE = 0,
+    KIOU_KF_ENTRY_SLOT_NSS_SETHASHSIZE,
+    KIOU_KF_ENTRY_SLOT_NSS_SETSKILLEVEL,
+    KIOU_KF_ENTRY_SLOT_NSS_SEARCHFULL,
+    KIOU_KF_ENTRY_SLOT_ACCOUNT_EXISTS,
+    KIOU_KF_ENTRY_SLOT_LOGIN_ARGS_CREATE,
+    KIOU_KF_ENTRY_SLOT_REGISTER_USER_ARGS_CREATE,
+    KIOU_KF_ENTRY_SLOT_RUN_LOGIN_SEQ_MOVENEXT,
+    KIOU_KF_ENTRY_SLOT_GET_SELF_PROFILE_MOVENEXT,
+    KIOU_KF_ENTRY_SLOT_HTTPMSGINVOKER_SEND_ASYNC,
 
-#define KIOU_CAVE_ALLOC_SET_TARGET_FRAMERATE          0
-#define KIOU_CAVE_ALLOC_GAME_ORCHESTRATOR_IS_AFK      1
-#define KIOU_CAVE_ALLOC_NSS_SETHASHSIZE               2
-#define KIOU_CAVE_ALLOC_NSS_SETSKILLEVEL              3
-#define KIOU_CAVE_ALLOC_NSS_SEARCHFULL                4
-#define KIOU_CAVE_ALLOC_AIMATMODE_ONMATCHEND          5
-#define KIOU_CAVE_ALLOC_CPUSTREAMMODE_ONMATCHEND      6
-#define KIOU_CAVE_ALLOC_LOCALPVPMODE_ONMATCHEND       7
-#define KIOU_CAVE_ALLOC_ONLINEPVPMODE_ONMATCHEND      8
-#define KIOU_CAVE_ALLOC_RECORDREPLAYMODE_ONMATCHEND   9
-#define KIOU_CAVE_ALLOC_ACCOUNT_EXISTS                10
-#define KIOU_CAVE_ALLOC_LOGIN_ARGS_CREATE             11
-#define KIOU_CAVE_ALLOC_REGISTER_USER_ARGS_CREATE     12
-#define KIOU_CAVE_ALLOC_RUN_LOGIN_SEQ_MOVENEXT        13
-#define KIOU_CAVE_ALLOC_GET_SELF_PROFILE_MOVENEXT     14
-#define KIOU_CAVE_ALLOC_HTTPMSGINVOKER_SEND_ASYNC     15
+    KIOU_KF_ENTRY_SLOT__COUNT,
+};
 
-#define KIOU_SITE_RVA_SET_TARGET_FRAMERATE          0x6B718A4
-#define KIOU_SITE_RVA_GAME_ORCHESTRATOR_IS_AFK      0x594A034
-#define KIOU_SITE_RVA_NSS_SETHASHSIZE               0x5D379DC
-#define KIOU_SITE_RVA_NSS_SETSKILLEVEL              0x5D37968
-#define KIOU_SITE_RVA_NSS_SEARCHFULL                0x5D37A74
-#define KIOU_SITE_RVA_AIMATMODE_ONMATCHEND          0x59EA720
-#define KIOU_SITE_RVA_CPUSTREAMMODE_ONMATCHEND      0x59F15D4
-#define KIOU_SITE_RVA_LOCALPVPMODE_ONMATCHEND       0x5A046B4
-#define KIOU_SITE_RVA_ONLINEPVPMODE_ONMATCHEND      0x5A06158
-#define KIOU_SITE_RVA_RECORDREPLAYMODE_ONMATCHEND   0x5A30320
-#define KIOU_SITE_RVA_ACCOUNT_EXISTS                0x5922CD0
-#define KIOU_SITE_RVA_LOGIN_ARGS_CREATE             0x5B9DC04
-#define KIOU_SITE_RVA_REGISTER_USER_ARGS_CREATE     0x5B9DC94
-#define KIOU_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT        0x58152BC
-#define KIOU_SITE_RVA_GET_SELF_PROFILE_MOVENEXT     0x5BB99DC
-#define KIOU_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC     0x6082AC0
+// Site RVAs — used by JB-flavour MSHookFunction installers.
+#define KIOU_KF_SITE_RVA_SET_TARGET_FRAMERATE       0x6B718A4
+#define KIOU_KF_SITE_RVA_GAME_ORCHESTRATOR_IS_AFK   0x594A034
+#define KIOU_KF_SITE_RVA_NSS_SETHASHSIZE            0x5D379DC
+#define KIOU_KF_SITE_RVA_NSS_SETSKILLEVEL           0x5D37968
+#define KIOU_KF_SITE_RVA_NSS_SEARCHFULL             0x5D37A74
+#define KIOU_KF_SITE_RVA_AI_END                     0x59EA720
+#define KIOU_KF_SITE_RVA_CPUSTREAM_END              0x59F15D4
+#define KIOU_KF_SITE_RVA_LOCAL_END                  0x5A046B4
+#define KIOU_KF_SITE_RVA_ONLINE_END                 0x5A06158
+#define KIOU_KF_SITE_RVA_REPLAY_END                 0x5A30320
+#define KIOU_KF_SITE_RVA_ACCOUNT_EXISTS             0x5922CD0
+#define KIOU_KF_SITE_RVA_LOGIN_ARGS_CREATE          0x5B9DC04
+#define KIOU_KF_SITE_RVA_REGISTER_USER_ARGS_CREATE  0x5B9DC94
+#define KIOU_KF_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT     0x58152BC
+#define KIOU_KF_SITE_RVA_GET_SELF_PROFILE_MOVENEXT  0x5BB99DC
+#define KIOU_KF_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC  0x6082AC0
 
-extern void **g_kfHookSlot;
-extern void  *g_kfBypassEntry[KIOU_CAVE_ALLOC_COUNT];
-uintptr_t KFResolveOrigTrampoline(uintptr_t unityBase, uintptr_t siteRVA);
+// Chinlan dispatcher publishes per-site cave-bypass addresses here so hook
+// bodies can call orig without re-entering the cave.
+#if IPA_CHINLAN
+extern void * volatile g_inject_entry[KIOU_KF_HOOK__COUNT];
+#endif
+
+void KFChinlanPublish(uintptr_t unityBase);
+
+// UnityFramework base captured at install time.
+extern uintptr_t g_unityBase;
 
 #import "il2cpp.h"
 #import "logging.h"
@@ -112,19 +138,11 @@ static inline void writeI32(void *base, uintptr_t off, int32_t val) {
 // ---------------------------------------------------------------------------
 
 void KFInstallFrameRateHook(uintptr_t unityBase);
-void KFInstallAfkDisableHook(uintptr_t unityBase);
 void KFInstallAnalysisTuneHook(uintptr_t unityBase);
 void KFInstallKifuObserveHook(uintptr_t unityBase);
 void KFInstallAccountObserveHook(uintptr_t unityBase);
 void KFInstallGrpcLoggingHook(uintptr_t unityBase);
 
-#if IPA_CHINLAN
-void KFChinlanPublish(uintptr_t unityBase);
-#endif
-
-// UnityFramework base address captured at install/publish time. Read by the
-// Kif_Writer pipeline to resolve static il2cpp methods by RVA.
-extern uintptr_t g_kfUnityBase;
 
 // ---------------------------------------------------------------------------
 // SyncSearchResult — mirrors Project.RshogiEngine.SyncSearchResult (struct).

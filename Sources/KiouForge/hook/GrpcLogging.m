@@ -92,17 +92,17 @@ static void swapUserIdHeader(void *request) {
 // ===========================================================================
 // Chinlan entry hook
 // ===========================================================================
+typedef void *(*GenericSendAsync_t)(void *self, void *request, void *ct);
+
+#if IPA_CHINLAN
 void *KFHookHttpMsgInvokerSendAsyncEntry(void *self, void *request, void *ct) {
     swapUserIdHeader(request);
-    typedef void *(*SendAsync_t)(void *, void *, void *);
-    SendAsync_t bypass =
-        (SendAsync_t)g_kfBypassEntry[KIOU_CAVE_ALLOC_HTTPMSGINVOKER_SEND_ASYNC];
+    GenericSendAsync_t bypass =
+        (GenericSendAsync_t)g_inject_entry[KIOU_KF_HOOK_HTTPMSGINVOKER_SEND_ASYNC];
     return bypass ? bypass(self, request, ct) : NULL;
 }
-
-typedef void *(*GenericSendAsync_t)(void *self, void *request, void *ct);
-static GenericSendAsync_t orig_HttpMsgInvokerSendAsync
-    __attribute__((unused)) = NULL;
+#else
+static GenericSendAsync_t orig_HttpMsgInvokerSendAsync __attribute__((unused)) = NULL;
 
 static void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct) {
     swapUserIdHeader(request);
@@ -110,6 +110,7 @@ static void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct) 
         ? orig_HttpMsgInvokerSendAsync(self, request, ct)
         : NULL;
 }
+#endif
 
 void KFInstallGrpcLoggingHook(uintptr_t unityBase) {
     g_HttpHeadersTryAdd =
@@ -120,15 +121,11 @@ void KFInstallGrpcLoggingHook(uintptr_t unityBase) {
         g_GrpcStringNew =
             (GrpcIl2CppStringNew_t)dlsym(RTLD_DEFAULT, "il2cpp_string_new");
 #if IPA_CHINLAN
-    g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC] =
-        (void *)KFHookHttpMsgInvokerSendAsyncEntry;
     IPALog([NSString stringWithFormat:
-              @"[GRPC] chinlan: slot[%d]=%p tryAdd=%p remove=%p strNew=%p",
-              KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC,
-              g_kfHookSlot[KIOU_SLOT_HTTPMSGINVOKER_SEND_ASYNC],
+              @"[GRPC] chinlan: entry hook wired tryAdd=%p remove=%p strNew=%p",
               g_HttpHeadersTryAdd, g_HttpHeadersRemove, g_GrpcStringNew]);
 #else
-    uintptr_t addr = unityBase + KIOU_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC;
+    uintptr_t addr = unityBase + KIOU_KF_SITE_RVA_HTTPMSGINVOKER_SEND_ASYNC;
     MSHookFunction((void *)addr,
                    (void *)KFHookHttpMsgInvokerSendAsync,
                    (void **)&orig_HttpMsgInvokerSendAsync);

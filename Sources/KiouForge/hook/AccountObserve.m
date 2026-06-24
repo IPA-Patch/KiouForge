@@ -35,11 +35,11 @@
 // ---------------------------------------------------------------------------
 // RVAs — sourced from ChinlanSites.h @generated block (make gen-sites).
 // ---------------------------------------------------------------------------
-#define KF_RVA_ACCOUNT_EXISTS                KIOU_SITE_RVA_ACCOUNT_EXISTS
-#define KF_RVA_LOGIN_ARGS_CREATE             KIOU_SITE_RVA_LOGIN_ARGS_CREATE
-#define KF_RVA_REGISTER_USER_ARGS_CREATE     KIOU_SITE_RVA_REGISTER_USER_ARGS_CREATE
-#define KF_RVA_RUN_LOGIN_SEQ_MOVENEXT        KIOU_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT
-#define KF_RVA_GET_SELF_PROFILE_MOVENEXT     KIOU_SITE_RVA_GET_SELF_PROFILE_MOVENEXT
+#define KF_RVA_ACCOUNT_EXISTS                KIOU_KF_SITE_RVA_ACCOUNT_EXISTS
+#define KF_RVA_LOGIN_ARGS_CREATE             KIOU_KF_SITE_RVA_LOGIN_ARGS_CREATE
+#define KF_RVA_REGISTER_USER_ARGS_CREATE     KIOU_KF_SITE_RVA_REGISTER_USER_ARGS_CREATE
+#define KF_RVA_RUN_LOGIN_SEQ_MOVENEXT        KIOU_KF_SITE_RVA_RUN_LOGIN_SEQ_MOVENEXT
+#define KF_RVA_GET_SELF_PROFILE_MOVENEXT     KIOU_KF_SITE_RVA_GET_SELF_PROFILE_MOVENEXT
 // RunReset / RunDelete are not in SITES (not binpatched); keep explicit RVAs.
 #define KF_RVA_RUN_RESET_USER_DATA_SEQ       0x5DCC204
 #define KF_RVA_RUN_DELETE_ACCOUNT_SEQ        0x5DCC2B4
@@ -191,7 +191,7 @@ void *KFHookLoginArgsCreate(void *deviceId, void *distinctId) {
 void *KFHookLoginArgsCreateEntry(void *deviceId, void *distinctId) {
     void *useDeviceId = kfSwapLoginDeviceId(deviceId, distinctId);
     LoginArgsCreate_t bypass =
-        (LoginArgsCreate_t)g_kfBypassEntry[KIOU_CAVE_ALLOC_LOGIN_ARGS_CREATE];
+        (LoginArgsCreate_t)g_inject_entry[KIOU_KF_HOOK_LOGIN_ARGS_CREATE];
     if (!bypass) {
         IPALog(@"[ACCOUNT] LoginArgs.Create chinlan bypass not published — "
                @"returning NULL; the caller will likely abort the login");
@@ -208,7 +208,7 @@ void *KFHookLoginArgsCreateEntry(void *deviceId, void *distinctId) {
 void *KFHookRegisterUserArgsCreateEntry(void *userName, void *distinctId) {
     void *useDistinctId = kfSwapRegisterDistinctId(userName, distinctId);
     RegisterUserArgsCreate_t bypass = (RegisterUserArgsCreate_t)
-        g_kfBypassEntry[KIOU_CAVE_ALLOC_REGISTER_USER_ARGS_CREATE];
+        g_inject_entry[KIOU_KF_HOOK_REGISTER_USER_ARGS_CREATE];
     if (!bypass) {
         IPALog(@"[ACCOUNT] RegisterUserArgs.Create chinlan bypass not published — "
                @"returning NULL");
@@ -266,7 +266,7 @@ void KFHookRunLoginSeqMoveNext(void *self) {
 #if IPA_CHINLAN
 void KFHookRunLoginSeqMoveNextEntry(void *self) {
     MoveNextVoid_t bypass = (MoveNextVoid_t)
-        g_kfBypassEntry[KIOU_CAVE_ALLOC_RUN_LOGIN_SEQ_MOVENEXT];
+        g_inject_entry[KIOU_KF_HOOK_RUN_LOGIN_SEQ_MOVENEXT];
     if (bypass) {
         @try { bypass(self); }
         @catch (NSException *e) {
@@ -342,7 +342,7 @@ void KFHookGetSelfProfileMoveNext(void *self) {
 #if IPA_CHINLAN
 void KFHookGetSelfProfileMoveNextEntry(void *self) {
     MoveNextVoid_t bypass = (MoveNextVoid_t)
-        g_kfBypassEntry[KIOU_CAVE_ALLOC_GET_SELF_PROFILE_MOVENEXT];
+        g_inject_entry[KIOU_KF_HOOK_GET_SELF_PROFILE_MOVENEXT];
     if (bypass) {
         @try { bypass(self); }
         @catch (NSException *e) {
@@ -408,7 +408,7 @@ bool KFHookAccountExists(void *data) {
 bool KFHookAccountExistsEntry(void *data) {
     bool origResult = false;
     AccountExists_t bypass = (AccountExists_t)
-        g_kfBypassEntry[KIOU_CAVE_ALLOC_ACCOUNT_EXISTS];
+        g_inject_entry[KIOU_KF_HOOK_ACCOUNT_EXISTS];
     @try { origResult = bypass(data); }
     @catch (NSException *e) {
         IPALog([NSString stringWithFormat:

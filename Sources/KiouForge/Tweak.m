@@ -17,6 +17,10 @@
 
 static BOOL g_unityHooked = NO;
 
+// UnityFramework base captured at install time; exported via Internal.h so
+// any module can resolve static il2cpp methods by RVA.
+uintptr_t g_unityBase = 0;
+
 static void installUnityHooks(uintptr_t unityBase, const char *unityName);
 
 // dyld add-image callback. Fires synchronously for every image already
@@ -35,6 +39,8 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     if (g_unityHooked) return;
     if (unityBase == 0) return;
 
+    g_unityBase = unityBase;
+
     IPALog([NSString stringWithFormat:
               @"UnityFramework base=0x%lx (%s)",
               (unsigned long)unityBase, unityName ? unityName : "?"]);
@@ -45,7 +51,6 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     KFChinlanPublish(unityBase);
 #endif
     KFInstallFrameRateHook(unityBase);
-    KFInstallAfkDisableHook(unityBase);
     KFInstallAnalysisTuneHook(unityBase);
     KFInstallKifuObserveHook(unityBase);
     KFInstallAccountObserveHook(unityBase);

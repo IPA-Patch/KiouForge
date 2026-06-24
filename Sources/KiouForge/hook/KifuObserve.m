@@ -1,92 +1,88 @@
 #import "Internal.h"
 
 // ===========================================================================
-// Hook_KifuObserve.m — wire KFKifuObserveMatchEnd into the five
-// IMatchMode.OnMatchEndAsync sites.
+// hook/KifuObserve.m — IMatchMode.OnMatchEndAsync observer hooks.
 //
-// Binpatch path:
-//   The recipe (recipes/kiouforge.py) emits an observer cave per site that
-//   saves caller registers, materializes the mode index into X2 via
-//   `MOVZ X2, #imm`, BLRs g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE], restores
-//   registers, executes the displaced prologue, and branches to orig+4. The
-//   slot points at KFKifuObserveMatchEnd; one slot serves all 5 sites.
+// Five sites (AI / CPUStream / LocalPvP / OnlinePvP / RecordReplay) all
+// route into mode-specific HookXxxEnd(self, ct) observer bodies that
+// invoke KFKifuObserveMatchEnd with the right KiouMatchMode index.
 //
-// Jailed / JB-rootless path:
-//   MSHookFunction (or DobbyHook under JAILED=1) installs a thin per-mode
-//   thunk on each OnMatchEnd entry. The thunk forwards to
-//   KFKifuObserveMatchEnd with its hard-coded mode index, then chains
-//   back to orig(self, ct) so the original async state machine continues.
+// Chinlan path:
+//   Each cave passes its hook_id in W6 to the shared observer slot at
+//   KIOU_KF_HOOK_SLOT_RVA; dispatch_one in ChinlanDispatcher.m switches
+//   on hook_id and calls HookXxxEnd directly.
 //
-// Both paths converge on the same KFKifuObserveMatchEnd, which honors
-// the master KIOU_FEATURE_KIFU_AUTOSAVE flag and the per-mode flags before
-// invoking the writer.
-//
-// RVAs are pinned to KIOU 1.0.1 build 11; see _KIFU_OBSERVE_SITES in
-// recipes/kiouforge.py for the matching prologue bytes.
+// JB path:
+//   MSHookFunction installs HookXxxEnd as a trampoline on each
+//   OnMatchEnd site; the chain-to-orig path runs after the observer body.
 // ===========================================================================
 
-// UnityFramework base captured at install/publish time. Helpers.m reads
-// this to resolve static il2cpp method pointers by RVA.
-uintptr_t g_kfUnityBase = 0;
-
-#define RVA_AI_END             KIOU_SITE_RVA_AIMATMODE_ONMATCHEND
-#define RVA_CPUSTREAM_END      KIOU_SITE_RVA_CPUSTREAMMODE_ONMATCHEND
-#define RVA_LOCAL_END          KIOU_SITE_RVA_LOCALPVPMODE_ONMATCHEND
-#define RVA_ONLINE_END         KIOU_SITE_RVA_ONLINEPVPMODE_ONMATCHEND
-#define RVA_RECORDREPLAY_END   KIOU_SITE_RVA_RECORDREPLAYMODE_ONMATCHEND
+#define RVA_AI_END             KIOU_KF_SITE_RVA_AI_END
+#define RVA_CPUSTREAM_END      KIOU_KF_SITE_RVA_CPUSTREAM_END
+#define RVA_LOCAL_END          KIOU_KF_SITE_RVA_LOCAL_END
+#define RVA_ONLINE_END         KIOU_KF_SITE_RVA_ONLINE_END
+#define RVA_REPLAY_END         KIOU_KF_SITE_RVA_REPLAY_END
 
 // 16-byte UniTask return (see KFUniTaskRet in Internal.h).
 typedef KFUniTaskRet (*OnMatchEndAsync_t)(void *self, void *ct);
 
+#if !IPA_CHINLAN
 static OnMatchEndAsync_t orig_AI_End            = NULL;
 static OnMatchEndAsync_t orig_CPUStream_End     = NULL;
 static OnMatchEndAsync_t orig_Local_End         = NULL;
 static OnMatchEndAsync_t orig_Online_End        = NULL;
 static OnMatchEndAsync_t orig_RecordReplay_End  = NULL;
+#endif
 
-// Per-mode thunks. Each thunk passes its hard-coded mode index to the
-// shared KFKifuObserveMatchEnd, then chains to orig so the original
-// async state machine continues. KKE used a `static` thunk family with a
-// macro; we expand it inline here to keep the file scannable.
+// ---------------------------------------------------------------------------
+// Observer bodies — single source of truth, called by both chinlan
+// dispatch_one and (via the JB trampolines below) MSHookFunction.
+// ---------------------------------------------------------------------------
+void HookAiEnd       (void *self, void *ct) { KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_AI_MATCH); }
+void HookCpuStreamEnd(void *self, void *ct) { KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_CPU_STREAM); }
+void HookLocalEnd    (void *self, void *ct) { KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_LOCAL_PVP); }
+void HookOnlineEnd   (void *self, void *ct) { KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_ONLINE_PVP); }
+void HookReplayEnd   (void *self, void *ct) { KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_RECORD_REPLAY); }
 
+#if !IPA_CHINLAN
+// JB-flavour trampolines: observer body first, then chain to orig.
 static KFUniTaskRet ThunkAIEnd(void *self, void *ct) {
-    KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_AI_MATCH);
+    HookAiEnd(self, ct);
     if (orig_AI_End) return orig_AI_End(self, ct);
     return (KFUniTaskRet){ NULL, NULL };
 }
 static KFUniTaskRet ThunkCPUStreamEnd(void *self, void *ct) {
-    KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_CPU_STREAM);
+    HookCpuStreamEnd(self, ct);
     if (orig_CPUStream_End) return orig_CPUStream_End(self, ct);
     return (KFUniTaskRet){ NULL, NULL };
 }
 static KFUniTaskRet ThunkLocalEnd(void *self, void *ct) {
-    KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_LOCAL_PVP);
+    HookLocalEnd(self, ct);
     if (orig_Local_End) return orig_Local_End(self, ct);
     return (KFUniTaskRet){ NULL, NULL };
 }
 static KFUniTaskRet ThunkOnlineEnd(void *self, void *ct) {
-    KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_ONLINE_PVP);
+    HookOnlineEnd(self, ct);
     if (orig_Online_End) return orig_Online_End(self, ct);
     return (KFUniTaskRet){ NULL, NULL };
 }
-static KFUniTaskRet ThunkRecordReplayEnd(void *self, void *ct) {
-    KFKifuObserveMatchEnd(self, ct, KIOU_MMODE_RECORD_REPLAY);
+static KFUniTaskRet ThunkReplayEnd(void *self, void *ct) {
+    HookReplayEnd(self, ct);
     if (orig_RecordReplay_End) return orig_RecordReplay_End(self, ct);
     return (KFUniTaskRet){ NULL, NULL };
 }
+#endif
 
 void KFInstallKifuObserveHook(uintptr_t unityBase) {
-    g_kfUnityBase = unityBase;
     NSString *outDir = KFKifEnsureOutputDir();
     IPALog([NSString stringWithFormat:@"[KIFU] output dir = %@",
               outDir ?: @"(failed)"]);
 #if IPA_CHINLAN
-    // One slot for all 5 sites — the cave passes mode_index in X2.
-    g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE] = (void *)KFKifuObserveMatchEnd;
-    IPALog([NSString stringWithFormat:
-              @"[CHINLAN] KifuObserve: slot[%d]=%p (handles all 5 IMatchMode sites)",
-              KIOU_SLOT_KIFU_OBSERVE,
-              g_kfHookSlot[KIOU_SLOT_KIFU_OBSERVE]]);
+    // Nothing to do — KFChinlanPublish has already wired dispatch_one
+    // into the observer slot; dispatch_one switches on W6=hook_id and
+    // calls HookXxxEnd directly.
+    (void)unityBase;
+    IPALog(@"[CHINLAN] KifuObserve: dispatch_one routes all 5 IMatchMode sites");
 #else
     struct { const char *tag; uintptr_t rva;
              void *thunk; void **origSlot; } entries[] = {
@@ -98,8 +94,8 @@ void KFInstallKifuObserveHook(uintptr_t unityBase) {
           (void *)ThunkLocalEnd,        (void **)&orig_Local_End },
         { "OnlinePvPMode",    RVA_ONLINE_END,
           (void *)ThunkOnlineEnd,       (void **)&orig_Online_End },
-        { "RecordReplayMode", RVA_RECORDREPLAY_END,
-          (void *)ThunkRecordReplayEnd, (void **)&orig_RecordReplay_End },
+        { "RecordReplayMode", RVA_REPLAY_END,
+          (void *)ThunkReplayEnd,       (void **)&orig_RecordReplay_End },
     };
     for (size_t i = 0; i < sizeof(entries)/sizeof(entries[0]); i++) {
         uintptr_t addr = unityBase + entries[i].rva;
