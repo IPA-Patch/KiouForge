@@ -55,6 +55,11 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     KIOUInstallKifuObserveHook(unityBase);
     KIOUInstallAccountObserveHook(unityBase);
     KIOUInstallGrpcLoggingHook(unityBase);
+    // GameOrchestrator.IsAfkEnabled — 1.0.2 moved from AFK_SITE inline
+    // patch to a CAVE_ENTRY (KIOU-Hook PR #7). Publishing the slot with
+    // the always-false hook body preserves the historic "AFK is always
+    // off" behaviour KiouForge relied on before the migration.
+    KIOUAfkDisableAlwaysFalseInstall(unityBase);
 
     g_unityHooked = YES;
     IPALog(@"=== KiouForge: all hooks installed ===");
