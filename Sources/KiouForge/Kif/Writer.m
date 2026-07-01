@@ -102,7 +102,7 @@ NSString *KIOUKifWriterEmit(void *gameCtrl,
 #define ONLINEPVPMODE_OFF_STATE_STORE   0x28
 #define ONLINEPVPMODE_OFF_MATCHCONFIG   0x38
 
-static void *KIOUResolveGameController(void *self, uint32_t mode_index) {
+static void *kf_resolveGameController(void *self, uint32_t mode_index) {
     if (mode_index >= KIOU_MMODE_COUNT) {
         IPALog([NSString stringWithFormat:
                   @"[KIFU] mode_index=%u out of range", mode_index]);
@@ -138,7 +138,7 @@ KIOUUniTaskRet KIOUKifuObserveMatchEnd(void *self, void *ct,
     const char *modeName = (mode_index < KIOU_MMODE_COUNT)
                          ? kKiouMatchModeTags[mode_index] : "Unknown";
 
-    void *gameCtrl = KIOUResolveGameController(self, mode_index);
+    void *gameCtrl = kf_resolveGameController(self, mode_index);
     if (!gameCtrl) {
         IPALog([NSString stringWithFormat:
                   @"[KIFU] %s self=%p: GameController unresolved, skipping",

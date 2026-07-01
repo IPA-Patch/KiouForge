@@ -15,7 +15,7 @@
 //     the __DATA slot table via KIOUChinlanPublish().
 // ===========================================================================
 
-static BOOL s_unityHooked = NO;
+static BOOL g_unityHooked = NO;
 
 // UnityFramework base captured at install time; exported via Internal.h so
 // any module can resolve static il2cpp methods by RVA.
@@ -26,9 +26,9 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName);
 // dyld add-image callback. Fires synchronously for every image already
 // loaded at registration time, then for every subsequent dlopen. We watch
 // for UnityFramework and install our hooks the first time it appears.
-static void KIOUOnImageAdded(const struct mach_header *mh, intptr_t slide) {
+static void kfOnImageAdded(const struct mach_header *mh, intptr_t slide) {
     (void)slide;
-    if (s_unityHooked) return;
+    if (g_unityHooked) return;
     Dl_info info;
     if (dladdr(mh, &info) == 0 || !info.dli_fname) return;
     if (!strstr(info.dli_fname, "UnityFramework")) return;
@@ -36,7 +36,7 @@ static void KIOUOnImageAdded(const struct mach_header *mh, intptr_t slide) {
 }
 
 static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
-    if (s_unityHooked) return;
+    if (g_unityHooked) return;
     if (unityBase == 0) return;
 
     g_unityBase = unityBase;
@@ -47,7 +47,7 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
 
 #if IPA_CHINLAN
     // Publish the slot table and bypass entries before any KIOUInstall* runs;
-    // the chinlan branch of each installer reads g_inject_entry.
+    // the chinlan branch of each installer reads g_kfHookSlot.
     KIOUChinlanPublish(unityBase);
 #endif
     KIOUInstallFrameRateHook(unityBase);
@@ -55,17 +55,12 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     KIOUInstallKifuObserveHook(unityBase);
     KIOUInstallAccountObserveHook(unityBase);
     KIOUInstallGrpcLoggingHook(unityBase);
-    // GameOrchestrator.IsAfkEnabled — 1.0.2 moved from AFK_SITE inline
-    // patch to a CAVE_ENTRY (KIOU-Hook PR #7). Publishing the slot with
-    // the always-false hook body preserves the historic "AFK is always
-    // off" behaviour KiouForge relied on before the migration.
-    KIOUAfkDisableAlwaysFalseInstall(unityBase);
 
-    s_unityHooked = YES;
+    g_unityHooked = YES;
     IPALog(@"=== KiouForge: all hooks installed ===");
 }
 
-__attribute__((constructor)) static void KIOUForgeInit(void) {
+__attribute__((constructor)) static void init(void) {
     IPALoggingInit("com.neconome.shogi.kiouforge");
     IPALog(@"=== KiouForge loaded ===");
 
@@ -93,7 +88,7 @@ __attribute__((constructor)) static void KIOUForgeInit(void) {
     // already loaded at registration time, then for every subsequent dlopen
     // — so this works whether UnityFramework is mapped when our constructor
     // runs or it gets dlopened later.
-    _dyld_register_func_for_add_image(&KIOUOnImageAdded);
+    _dyld_register_func_for_add_image(&kfOnImageAdded);
 
     IPALog(@"=== KiouForge constructor done ===");
 }

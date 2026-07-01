@@ -82,7 +82,7 @@ extern void KIOUApplyFPS(int32_t fps);
         return;
     }
     NSURL *tmpURL = [NSURL fileURLWithPath:
-        [NSTemporaryDirectory() stringByAppendingPathComponent:@"kiou_accounts.json"]];
+        [NSTemporaryDirectory() stringByAppendingPathComponent:@"kf_accounts.json"]];
     [data writeToURL:tmpURL atomically:YES];
     UIActivityViewController *vc =
         [[UIActivityViewController alloc] initWithActivityItems:@[tmpURL]
@@ -103,7 +103,7 @@ extern void KIOUApplyFPS(int32_t fps);
 
 - (UITableViewCell *)tableView:(UITableView *)tv
          cellForRowAtIndexPath:(NSIndexPath *)ip {
-    static NSString *kId = @"kiou_account_row";
+    static NSString *kId = @"kf_account_row";
     UITableViewCell *cell = [tv dequeueReusableCellWithIdentifier:kId];
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle
@@ -338,7 +338,7 @@ static NSString *const kAboutTwitterURL = @"https://x.com/tkgling";
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == KF_SECTION_ACCOUNT) {
         if (indexPath.row == KF_ACCOUNT_ROW_ACTIVE) {
-            static NSString *kId = @"kiou_account_active";
+            static NSString *kId = @"kf_account_active";
             UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:kId];
             if (!cell) {
                 cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1
@@ -362,7 +362,7 @@ static NSString *const kAboutTwitterURL = @"https://x.com/tkgling";
             return cell;
         }
         // KF_ACCOUNT_ROW_FORCE_REGISTER
-        static NSString *kId2 = @"kiou_force_register";
+        static NSString *kId2 = @"kf_force_register";
         UITableViewCell *cell2 = [tableView dequeueReusableCellWithIdentifier:kId2];
         if (!cell2) {
             cell2 = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
@@ -693,7 +693,7 @@ static NSString *const kAboutTwitterURL = @"https://x.com/tkgling";
 // Presenter bridge — called from Settings.m (right-edge swipe).
 // ---------------------------------------------------------------------------
 
-static UIWindow *KIOUActiveWindow(void) {
+static UIWindow *kfActiveWindow(void) {
     UIApplication *app = UIApplication.sharedApplication;
     if (!app) return nil;
     UIWindow *fallback = nil;
@@ -710,7 +710,7 @@ static UIWindow *KIOUActiveWindow(void) {
 
 void KIOUPresentSettings(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *win = KIOUActiveWindow();
+        UIWindow *win = kfActiveWindow();
         if (!win) { IPALog(@"[SETTINGS] no active window"); return; }
         UIViewController *root = win.rootViewController;
         if (!root) { IPALog(@"[SETTINGS] no root vc"); return; }
