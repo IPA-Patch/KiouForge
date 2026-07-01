@@ -40,16 +40,17 @@ extern void HookReplayEnd(void *self, void *ct);
 // replace orig; the body calls the cave bypass (resolved by KIOUHookOrig)
 // to invoke the original method when needed.
 // ---------------------------------------------------------------------------
-extern void  KFHookSetTargetFrameRateEntry(int32_t value, void *mi);
-extern void  KFHookNSSSetHashSizeEntry(void *self, int32_t mb, void *mi);
-extern void  KFHookNSSSetSkillLevelEntry(void *self, int32_t level, void *mi);
-extern void *KFHookNSSSearchFullEntry(void *self, void *sfen, int32_t depth, void *mi);
-extern bool  KFHookAccountExists(void *data);
-extern void *KFHookLoginArgsCreate(void *deviceId, void *distinctId);
-extern void *KFHookRegisterUserArgsCreate(void *userName, void *distinctId);
-extern void  KFHookRunLoginSeqMoveNext(void *self);
-extern void  KFHookGetSelfProfileMoveNext(void *self);
-extern void *KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct);
+extern void               KFHookSetTargetFrameRateEntry(int32_t value, void *mi);
+extern void               KFHookNSSSetHashSizeEntry(void *self, int32_t mb, void *mi);
+extern void               KFHookNSSSetSkillLevelEntry(void *self, int32_t level, void *mi);
+extern KFSyncSearchResult KFHookNSSSearchFullEntry(void *self, void *sfen, int32_t depth, void *mi);
+extern bool               KFHookAccountExists(void *data, void *mi);
+extern void *             KFHookLoginArgsCreate(void *deviceId, void *distinctId, void *mi);
+extern void *             KFHookRegisterUserArgsCreate(void *userName, void *distinctId, void *mi);
+extern void               KFHookRunLoginSeqMoveNext(void *self, void *mi);
+extern void               KFHookGetSelfProfileMoveNext(void *self, void *mi);
+extern void *             KFHookHttpMsgInvokerSendAsync(void *self, void *request, void *ct, void *mi);
+extern void               KFHookHeaderProviderSetOrUpdate(void *self, void *keyStr, void *valueStr, void *mi);
 
 // ---------------------------------------------------------------------------
 // dispatch_one — single shared observer slot, switches on W6=hook_id.
@@ -123,6 +124,7 @@ void KFChinlanPublish(uintptr_t unityBase) {
     entrySlots[KIOU_HOOK_SLOT_RUN_LOGIN_SEQ_MOVENEXT]    = (void *)&KFHookRunLoginSeqMoveNext;
     entrySlots[KIOU_HOOK_SLOT_GET_SELF_PROFILE_MOVENEXT] = (void *)&KFHookGetSelfProfileMoveNext;
     entrySlots[KIOU_HOOK_SLOT_HTTPMSGINVOKER_SEND_ASYNC] = (void *)&KFHookHttpMsgInvokerSendAsync;
+    entrySlots[KIOU_HOOK_SLOT_HEADER_PROVIDER_SET_OR_UPDATE_HEADER] = (void *)&KFHookHeaderProviderSetOrUpdate;
 
     IPALog([NSString stringWithFormat:
               @"[CHINLAN] dispatcher=%p observer slot=%p (unityBase+0x%lx) "
