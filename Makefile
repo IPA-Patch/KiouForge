@@ -34,6 +34,29 @@ BUNDLE_ID_SUFFIX         ?=
 
 BUILD_COMMIT_DEFINE      := KIOU_FORGE_COMMIT
 
+# KIOU-Hook hook_ids KiouForge actually publishes slots for via
+# ChinlanDispatcher.m. Any CAVE_ENTRY row in the shared recipe outside
+# this set gets filtered out before patch_macho runs, so cave insertion
+# stays 1:1 with slot publication and unpublished-slot NULL BLR crashes
+# can't happen.
+KIOU_HOOK_ID_ALLOW       := \
+    KIOU_HOOK_ID_SET_TARGET_FRAMERATE,\
+    KIOU_HOOK_ID_NSS_SETHASHSIZE,\
+    KIOU_HOOK_ID_NSS_SETSKILLEVEL,\
+    KIOU_HOOK_ID_NSS_SEARCHFULL,\
+    KIOU_HOOK_ID_ACCOUNT_EXISTS,\
+    KIOU_HOOK_ID_LOGIN_ARGS_CREATE,\
+    KIOU_HOOK_ID_REGISTER_USER_ARGS_CREATE,\
+    KIOU_HOOK_ID_RUN_LOGIN_SEQ_MOVENEXT,\
+    KIOU_HOOK_ID_GET_SELF_PROFILE_MOVENEXT,\
+    KIOU_HOOK_ID_KIFU_AI_END,\
+    KIOU_HOOK_ID_KIFU_CPUSTREAM_END,\
+    KIOU_HOOK_ID_KIFU_LOCAL_END,\
+    KIOU_HOOK_ID_KIFU_ONLINE_END,\
+    KIOU_HOOK_ID_KIFU_REPLAY_END,\
+    KIOU_HOOK_ID_HEADER_PROVIDER_SET_OR_UPDATE_HEADER,\
+    KIOU_HOOK_ID_GAME_ORCHESTRATOR_IS_AFK
+
 # ---------------------------------------------------------------------------
 # Theos boilerplate.
 # ---------------------------------------------------------------------------
@@ -132,6 +155,7 @@ ipa:: chinlan
 	  exit 1; \
 	fi
 	@TARGET_VERSION="$(TARGET_VERSION)" \
+	 KIOU_HOOK_ID_ALLOW="$(strip $(KIOU_HOOK_ID_ALLOW))" \
 	 PYTHONPATH="$(KIOU_HOOK_DIR):$$PYTHONPATH" \
 	 ./shared/tools/build_patched_ipa.sh \
 	  --recipe            "$(IPA_RECIPE)" \
