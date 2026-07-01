@@ -15,7 +15,7 @@
 //     the __DATA slot table via KIOUChinlanPublish().
 // ===========================================================================
 
-static BOOL g_unityHooked = NO;
+static BOOL s_unityHooked = NO;
 
 // UnityFramework base captured at install time; exported via Internal.h so
 // any module can resolve static il2cpp methods by RVA.
@@ -26,9 +26,9 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName);
 // dyld add-image callback. Fires synchronously for every image already
 // loaded at registration time, then for every subsequent dlopen. We watch
 // for UnityFramework and install our hooks the first time it appears.
-static void kfOnImageAdded(const struct mach_header *mh, intptr_t slide) {
+static void KIOUOnImageAdded(const struct mach_header *mh, intptr_t slide) {
     (void)slide;
-    if (g_unityHooked) return;
+    if (s_unityHooked) return;
     Dl_info info;
     if (dladdr(mh, &info) == 0 || !info.dli_fname) return;
     if (!strstr(info.dli_fname, "UnityFramework")) return;
@@ -36,7 +36,7 @@ static void kfOnImageAdded(const struct mach_header *mh, intptr_t slide) {
 }
 
 static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
-    if (g_unityHooked) return;
+    if (s_unityHooked) return;
     if (unityBase == 0) return;
 
     g_unityBase = unityBase;
@@ -47,7 +47,7 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
 
 #if IPA_CHINLAN
     // Publish the slot table and bypass entries before any KIOUInstall* runs;
-    // the chinlan branch of each installer reads g_kfHookSlot.
+    // the chinlan branch of each installer reads g_inject_entry.
     KIOUChinlanPublish(unityBase);
 #endif
     KIOUInstallFrameRateHook(unityBase);
@@ -61,11 +61,11 @@ static void installUnityHooks(uintptr_t unityBase, const char *unityName) {
     // off" behaviour KiouForge relied on before the migration.
     KIOUAfkDisableAlwaysFalseInstall(unityBase);
 
-    g_unityHooked = YES;
+    s_unityHooked = YES;
     IPALog(@"=== KiouForge: all hooks installed ===");
 }
 
-__attribute__((constructor)) static void init(void) {
+__attribute__((constructor)) static void KIOUForgeInit(void) {
     IPALoggingInit("com.neconome.shogi.kiouforge");
     IPALog(@"=== KiouForge loaded ===");
 
@@ -93,7 +93,7 @@ __attribute__((constructor)) static void init(void) {
     // already loaded at registration time, then for every subsequent dlopen
     // — so this works whether UnityFramework is mapped when our constructor
     // runs or it gets dlopened later.
-    _dyld_register_func_for_add_image(&kfOnImageAdded);
+    _dyld_register_func_for_add_image(&KIOUOnImageAdded);
 
     IPALog(@"=== KiouForge constructor done ===");
 }
