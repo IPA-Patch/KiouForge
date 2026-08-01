@@ -4,6 +4,8 @@ All notable changes to KiouForge are documented here.
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-08-01
+
 ### Added
 
 - **KIOU 1.1.0 support** (CFBundleVersion 15). All 17 hook sites re-verified against the 1.1.0 Mach-O; every struct offset the KIF pipeline reads is unchanged from 1.0.2.
