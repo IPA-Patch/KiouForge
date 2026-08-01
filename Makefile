@@ -211,18 +211,26 @@ ipa:: chinlan
 #     INSTALLED_IPA_BUNDLE_ID  — bundle id used to relaunch the app
 #     DEVICE_USER              — SSH user (defaults to root)
 #     REMOTE_STAGING_DIR       — sandbox-visible dir to scp the IPA into
+#     THEOS_DEVICE_PORT        — SSH port. Needed when the device is reached
+#                                through an iproxy forward on the host
+#                                (THEOS_DEVICE_IP=host.docker.internal), where
+#                                port 22 answers as the host, not the phone.
 # ---------------------------------------------------------------------------
 TROLLSTORE_HELPER        ?=
 INSTALLED_IPA_BUNDLE_ID  ?= $(TARGET_BUNDLE_ID)$(if $(BUNDLE_ID_SUFFIX),.$(BUNDLE_ID_SUFFIX),)
 DEVICE_USER              ?= root
 REMOTE_STAGING_DIR       ?= /var/mobile/Documents
+THEOS_DEVICE_PORT        ?= 22
+# scp spells the port -P, ssh spells it -p.
+DEVICE_SCP               := scp -P $(THEOS_DEVICE_PORT)
+DEVICE_SSH               := ssh -p $(THEOS_DEVICE_PORT)
 
 .PHONY: deploy
 deploy: ipa
 	@helper='$(TROLLSTORE_HELPER)'; \
 	if [ -z "$$helper" ]; then \
 	  echo "==> discovering trollstorehelper on $(THEOS_DEVICE_IP)"; \
-	  helper=$$(ssh $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	  helper=$$($(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
 	    "find /var/jb/Applications /var/containers/Bundle/Application \
 	          -maxdepth 4 -type f -name trollstorehelper 2>/dev/null \
 	     | grep -v 'PersistenceHelper' \
@@ -235,15 +243,15 @@ deploy: ipa
 	  exit 1; \
 	fi; \
 	echo "==> helper: $$helper"; \
-	echo "==> scp $(notdir $(IPA_OUT)) -> $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(REMOTE_STAGING_DIR)/"; \
-	scp -q $(IPA_OUT) $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT)); \
-	ssh $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	echo "==> scp $(notdir $(IPA_OUT)) -> $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(THEOS_DEVICE_PORT):$(REMOTE_STAGING_DIR)/"; \
+	$(DEVICE_SCP) -q $(IPA_OUT) $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT)); \
+	$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
 	    "chown mobile:mobile '$(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))' 2>/dev/null || true"; \
 	echo "==> trollstorehelper install force $(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))"; \
-	ssh $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
 	    "$$helper install force $(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))"
 	@echo "==> launching $(TARGET_PROCESS) ($(INSTALLED_IPA_BUNDLE_ID))"
-	@ssh $(DEVICE_USER)@$(THEOS_DEVICE_IP) 'sleep 1; (open $(INSTALLED_IPA_BUNDLE_ID) 2>/dev/null \
+	@$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) 'sleep 1; (open $(INSTALLED_IPA_BUNDLE_ID) 2>/dev/null \
 	    || uiopen $(INSTALLED_IPA_BUNDLE_ID):// 2>/dev/null \
 	    || echo "no launcher tool; start $(TARGET_PROCESS) manually")'
 
