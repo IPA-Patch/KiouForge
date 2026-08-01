@@ -16,7 +16,12 @@ static SetTargetFrameRate_t orig_set_targetFrameRate = NULL;
 static int32_t pickFPS(int32_t value) {
     int32_t v = KIOUFeatureEnabled(KIOU_FEATURE_FPS_OVERRIDE)
               ? KIOUTargetFPS() : value;
-    if (v != value) {
+    // KIOU re-applies its own target every ~5 s, so logging every
+    // override would bury everything else. Only report transitions.
+    static int32_t lastFrom = -1, lastTo = -1;
+    if (v != value && (value != lastFrom || v != lastTo)) {
+        lastFrom = value;
+        lastTo   = v;
         IPALog([NSString stringWithFormat:
                   @"[FPS] set_targetFrameRate %d -> %d (override)", value, v]);
     }
