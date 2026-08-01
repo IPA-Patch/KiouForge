@@ -20,8 +20,20 @@ TARGET_PROCESS           := KIOU
 TARGET_BUNDLE_ID         := com.neconome.shogi
 
 # Override on the command line: make ipa TARGET_VERSION=1.0.2
-TARGET_VERSION           ?= 1.0.2
+TARGET_VERSION           ?= 1.1.0
 DECRYPTED_IPA            ?= $(CURDIR)/assets/$(TARGET_VERSION)/Kiou-$(TARGET_VERSION).ipa
+
+# KIOU-Hook selects its per-version RVA header (vendor/KIOU-Hook/rva/) by
+# CFBundleVersion, not by marketing version, so map one to the other here.
+# Without the -D below the catalog silently falls back to its own default
+# and the dylib gets built against another build's addresses.
+KIOU_BUILD_1.0.1         := 11
+KIOU_BUILD_1.0.2         := 12
+KIOU_BUILD_1.1.0         := 15
+KIOU_HOOK_TARGET_BUILD   := $(KIOU_BUILD_$(TARGET_VERSION))
+ifeq ($(KIOU_HOOK_TARGET_BUILD),)
+$(error unknown TARGET_VERSION '$(TARGET_VERSION)'; known: 1.0.1 1.0.2 1.1.0)
+endif
 IPA_RECIPE               := recipes.__init__
 KIOU_HOOK_DIR            := $(CURDIR)/vendor/KIOU-Hook
 IPA_FRAMEWORK            := UnityFramework
@@ -70,6 +82,7 @@ endif
 $(TWEAK_NAME)_CFLAGS     := -fobjc-arc -Wno-unused-function \
                             -D$(BUILD_COMMIT_DEFINE)=\"$(BUILD_COMMIT)\" \
                             -DKIOU_FORGE_VERSION=\"$(PACKAGE_VERSION)\" \
+                            -DKIOU_HOOK_TARGET_BUILD=$(KIOU_HOOK_TARGET_BUILD) \
                             -ISources/Chinlan -I$(TWEAK_SOURCES_DIR) \
                             -Ivendor/KIOU-Hook
 ifdef FINAL_RELEASE

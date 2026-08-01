@@ -4,8 +4,17 @@ All notable changes to KiouForge are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **KIOU 1.1.0 support** (CFBundleVersion 15). All 17 hook sites re-verified against the 1.1.0 Mach-O; every struct offset the KIF pipeline reads is unchanged from 1.0.2.
+
 ### Changed
 
+- `TARGET_VERSION` now defaults to `1.1.0`; `1.0.1` and `1.0.2` remain buildable by passing it explicitly. The Makefile maps the version to KIOU-Hook's `KIOU_HOOK_TARGET_BUILD` so the dylib and the recipe always agree on which addresses to bake in, and errors out on an unknown version instead of silently falling back.
+- The five direct-call RVAs the KIF pipeline uses (`GetUSIText`, `ToSFEN`, `ParseUSI`, `KIFWriteOptions..ctor`, `KIFWriter.Write`) now resolve through the KIOU-Hook catalog instead of being pinned in `Kif/Helpers.m`, so they follow `TARGET_VERSION` like every other site.
+- `make deploy` accepts `THEOS_DEVICE_PORT`, needed when the device is reached through an iproxy forward on the host — there port 22 answers as the host rather than the phone.
+- FPS override logging only reports transitions. KIOU re-applies its own target every ~5 s, and logging each one buried every other line (198 of 242 lines in one session).
+- Bumped the `vendor/KIOU-Hook` submodule to `8ab5868` (per-version RVA headers under `rva/`, `recipes/v1_1_0.py`) and `shared` (Kanade) to develop, which carries the verify_sites overload resolution and the `caves.py` placeholder rows 1.1.0 needs.
 - `make deploy` now works on TrollStore Lite devices. `TROLLSTORE_HELPER` defaults to empty and the target SSH-discovers the helper binary at deploy time, preferring `TrollStoreLite.app` over `TrollStore.app` and filtering out stale `TrollStorePersistenceHelper.app` leftovers whose entitlements expire between sessions (which manifest as ssh 255 / SIGKILL 137). The IPA is staged in `/var/mobile/Documents/` instead of `/tmp/` — the trollstorehelper sandbox cannot read `/tmp/` and rejects an IPA there with error 166. The staged file is `chown mobile:mobile`-ed after `scp` so the helper can open it. Non-Lite setups keep working unchanged; operators who pinned `TROLLSTORE_HELPER` in their `.env` are unaffected. `REMOTE_STAGING_DIR` is exposed as an override for setups that stage elsewhere.
 
 ## [0.2.1] — 2026-06-26
