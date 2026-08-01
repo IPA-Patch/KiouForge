@@ -35,10 +35,10 @@
 // KIOUKifTextFromGameController is the bridge into il2cpp — everything else is
 // pure Foundation.
 //
-// Background: GameController.GetKifuText (RVA 0x5D43D10) returns an in-app
-// SUMMARY ("001 ☗ ☗３八飛 … まで、☖後手の勝ち（詰み）"), NOT the standard
-// KIF 2.0 that desktop kifu viewers expect. We instead run the canonical
-// pipeline KIOU uses internally:
+// Background: GameController.GetKifuText returns an in-app SUMMARY
+// ("001 ☗ ☗３八飛 … まで、☖後手の勝ち（詰み）"), NOT the standard KIF 2.0
+// that desktop kifu viewers expect. We instead run the canonical pipeline
+// KIOU uses internally:
 //
 //     GetUSIText(self)                       → "position startpos moves ..."
 //          ↓
@@ -71,18 +71,10 @@
 // touched by the fill is ThinkingTimesMicros (per-move clock, queued for v0.4).
 // ===========================================================================
 
-// ---------------------------------------------------------------------------
-// RVAs (KIOU 1.0.1 build 11). Same source of truth as KiouUsiProxy.
-// ---------------------------------------------------------------------------
-// RVAs pinned to KIOU 1.0.2 (dump.cs verified 2026-07-02). The previous
-// values were 1.0.1 leftovers pointing at unrelated methods — calling
-// through them at match-end crashed with a SIGSEGV inside GetUSIText
-// (LDR from a bogus X10 loaded from *(gameCtrl+0xB0)).
-#define RVA_GAMECTRL_GET_USI_TEXT   0x5D49970  // string GameController.GetUSIText(this)
-#define RVA_POSITION_TO_SFEN        0x5D49C70  // string Position.ToSFEN(this)
-#define RVA_USIPARSER_PARSE_USI     0x5D5CBB0  // static RecordManager USIParser.ParseUSI(string)
-#define RVA_KIFWRITEOPTIONS_CTOR    0x5D5925C  // void KIFWriteOptions..ctor(this)
-#define RVA_KIFWRITER_WRITE         0x5D59264  // static string KIFWriter.Write(RecordManager, KIFWriteOptions)
+// The five methods this pipeline calls are direct-ABI catalog rows in
+// KIOU-Hook (hook_id = -1 — resolved and called, never hooked), so their
+// addresses come from KIOUHookSiteAddr and follow KIOU_HOOK_TARGET_BUILD
+// instead of being pinned to one app version here.
 
 // KIFWriteOptions instance size needed for the raw-buffer trick. See the
 // KIFOPTS_OFF_* constants in Internal.h for the field map. Last field
@@ -159,29 +151,41 @@ static KIFWriteOptions_Ctor_t  g_KIFOpts_Ctor    = NULL;
 static KIFWriter_Write_t       g_KIFWriter_Write = NULL;
 static Position_ToSFEN_t       g_PositionToSFEN  = NULL;
 
+// KIOUHookSiteAddr returns 0 for a name the catalog doesn't carry; return
+// NULL rather than a pointer to unityBase itself so callers' existing null
+// checks catch it.
+static void *resolveSite(const char *name) {
+    uintptr_t addr = KIOUHookSiteAddr(name, g_unityBase);
+    if (addr == 0) {
+        IPALog([NSString stringWithFormat:@"[KIF] site unresolved: %s", name]);
+        return NULL;
+    }
+    return (void *)addr;
+}
+
 // Resolve the il2cpp NativeFunction pointers we use. Idempotent and cheap;
 // safe to call once per export call.
 static void resolveIl2cppFunctions(void) {
     if (g_unityBase == 0) return;
     if (!g_GetUSIText) {
         g_GetUSIText = (GameCtrl_GetUSIText_t)
-            (void *)(g_unityBase + RVA_GAMECTRL_GET_USI_TEXT);
+            resolveSite(KIOU_HOOK_NAME_GAMECTRL_GET_USI_TEXT);
     }
     if (!g_ParseUSI) {
         g_ParseUSI = (USIParser_ParseUSI_t)
-            (void *)(g_unityBase + RVA_USIPARSER_PARSE_USI);
+            resolveSite(KIOU_HOOK_NAME_USIPARSER_PARSE_USI);
     }
     if (!g_KIFOpts_Ctor) {
         g_KIFOpts_Ctor = (KIFWriteOptions_Ctor_t)
-            (void *)(g_unityBase + RVA_KIFWRITEOPTIONS_CTOR);
+            resolveSite(KIOU_HOOK_NAME_KIFWRITEOPTIONS_CTOR);
     }
     if (!g_KIFWriter_Write) {
         g_KIFWriter_Write = (KIFWriter_Write_t)
-            (void *)(g_unityBase + RVA_KIFWRITER_WRITE);
+            resolveSite(KIOU_HOOK_NAME_KIFWRITER_WRITE);
     }
     if (!g_PositionToSFEN) {
         g_PositionToSFEN = (Position_ToSFEN_t)
-            (void *)(g_unityBase + RVA_POSITION_TO_SFEN);
+            resolveSite(KIOU_HOOK_NAME_POSITION_TO_SFEN);
     }
 }
 

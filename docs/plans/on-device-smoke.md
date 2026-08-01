@@ -78,9 +78,10 @@ practice. Broader flows can layer on the same harness later.
   frida-il2cpp-bridge`, or `pip install frida-tools` if we go Python).
   The design below is bun-based to match KiouForge's existing tool
   chain in `shared/tools/`.
-- **`assets/1.0.2/dump.cs.index.json`** (already checked in) — Frida
-  script reads class + method names from it so RVAs never appear
-  literally in the script (they change per app version).
+- **`assets/$TARGET_VERSION/dump.cs.index.json`** (already checked in
+  for 1.0.1 / 1.0.2 / 1.1.0) — Frida script reads class + method names
+  from it so RVAs never appear literally in the script (they change per
+  app version).
 
 ## Architecture
 
@@ -267,7 +268,7 @@ scripts/
   case explicitly; user-visible failures still map to "SSH says
   frida-server crashed" rather than false test failures.
 - **Presenter signatures change per app version.** The script pins
-  to 1.0.2 today; when 1.0.3 lands, presenter method names or
+  to 1.1.0 today; when the next build lands, presenter method names or
   signatures may drift. Mitigation: keep the mapping (presenter,
   method, args) in a small YAML config file, loaded per
   `TARGET_VERSION`.
