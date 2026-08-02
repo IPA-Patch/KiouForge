@@ -20,11 +20,29 @@ TARGET_PROCESS           := KIOU
 TARGET_BUNDLE_ID         := com.neconome.shogi
 
 # Override on the command line: make ipa TARGET_VERSION=1.0.2
-TARGET_VERSION           ?= 1.0.2
+TARGET_VERSION           ?= 1.1.0
 DECRYPTED_IPA            ?= $(CURDIR)/assets/$(TARGET_VERSION)/Kiou-$(TARGET_VERSION).ipa
+
+# KIOU-Hook selects its per-version RVA header (vendor/KIOU-Hook/rva/) by
+# CFBundleVersion, not by marketing version, so map one to the other here.
+# Without the -D below the catalog silently falls back to its own default
+# and the dylib gets built against another build's addresses.
+KIOU_BUILD_1.0.1         := 11
+KIOU_BUILD_1.0.2         := 12
+KIOU_BUILD_1.1.0         := 15
+KIOU_HOOK_TARGET_BUILD   := $(KIOU_BUILD_$(TARGET_VERSION))
+ifeq ($(KIOU_HOOK_TARGET_BUILD),)
+$(error unknown TARGET_VERSION '$(TARGET_VERSION)'; known: 1.0.1 1.0.2 1.1.0)
+endif
 IPA_RECIPE               := recipes.__init__
 KIOU_HOOK_DIR            := $(CURDIR)/vendor/KIOU-Hook
 IPA_FRAMEWORK            := UnityFramework
+
+# Optional CFBundleIdentifier suffix. Empty (default) leaves the bundle
+# id alone so the patched IPA overwrites the original app; set e.g.
+# BUNDLE_ID_SUFFIX=chinlan in .env or on the command line to append
+# ".chinlan" and install alongside the original.
+BUNDLE_ID_SUFFIX         ?=
 
 BUILD_COMMIT_DEFINE      := KIOU_FORGE_COMMIT
 
@@ -36,7 +54,7 @@ INSTALL_TARGET_PROCESSES := $(TARGET_PROCESS)
 ARCHS                    := arm64
 THEOS_PACKAGE_SCHEME     := rootless
 -include .env
-THEOS_DEVICE_IP          ?= 192.168.0.49
+THEOS_DEVICE_IP          ?= 192.168.0.30
 
 include $(THEOS)/makefiles/common.mk
 
@@ -64,6 +82,7 @@ endif
 $(TWEAK_NAME)_CFLAGS     := -fobjc-arc -Wno-unused-function \
                             -D$(BUILD_COMMIT_DEFINE)=\"$(BUILD_COMMIT)\" \
                             -DKIOU_FORGE_VERSION=\"$(PACKAGE_VERSION)\" \
+                            -DKIOU_HOOK_TARGET_BUILD=$(KIOU_HOOK_TARGET_BUILD) \
                             -ISources/Chinlan -I$(TWEAK_SOURCES_DIR) \
                             -Ivendor/KIOU-Hook
 ifdef FINAL_RELEASE
@@ -116,6 +135,31 @@ chinlan::
 
 IPA_DYLIB                := $(CURDIR)/packages/chinlan/$(TWEAK_NAME).dylib
 
+IPA_OUT                  := $(CURDIR)/packages/ipa/$(basename $(notdir $(DECRYPTED_IPA)))-patched.ipa
+
+# KIOU-Hook site allow-list — KiouForge only ships 17 of the 34 catalog
+# rows. Passing this to `recipes/__init__.py` (via env) filters out the
+# KiouEditor entries whose caves would otherwise collide with the
+# __oslogstring fragment past 0x826FFF8.
+KIOU_HOOK_ID_ALLOW       := \
+    KIOU_HOOK_ID_SET_TARGET_FRAMERATE,\
+    KIOU_HOOK_ID_NSS_SETHASHSIZE,\
+    KIOU_HOOK_ID_NSS_SETSKILLEVEL,\
+    KIOU_HOOK_ID_NSS_SEARCHFULL,\
+    KIOU_HOOK_ID_ACCOUNT_EXISTS,\
+    KIOU_HOOK_ID_LOGIN_ARGS_CREATE,\
+    KIOU_HOOK_ID_REGISTER_USER_ARGS_CREATE,\
+    KIOU_HOOK_ID_RUN_LOGIN_SEQ_MOVENEXT,\
+    KIOU_HOOK_ID_GET_SELF_PROFILE_MOVENEXT,\
+    KIOU_HOOK_ID_HTTPMSGINVOKER_SEND_ASYNC,\
+    KIOU_HOOK_ID_KIFU_AI_END,\
+    KIOU_HOOK_ID_KIFU_CPUSTREAM_END,\
+    KIOU_HOOK_ID_KIFU_LOCAL_END,\
+    KIOU_HOOK_ID_KIFU_ONLINE_END,\
+    KIOU_HOOK_ID_KIFU_REPLAY_END,\
+    KIOU_HOOK_ID_HEADER_PROVIDER_SET_OR_UPDATE_HEADER,\
+    KIOU_HOOK_ID_GAME_ORCHESTRATOR_IS_AFK
+
 ipa:: chinlan
 	@echo "==> assembling patched IPA from $(DECRYPTED_IPA) (v$(TARGET_VERSION))"
 	@if [ ! -f "$(DECRYPTED_IPA)" ]; then \
@@ -124,13 +168,92 @@ ipa:: chinlan
 	  exit 1; \
 	fi
 	@TARGET_VERSION="$(TARGET_VERSION)" \
+	 KIOU_HOOK_ID_ALLOW="$(strip $(KIOU_HOOK_ID_ALLOW))" \
 	 PYTHONPATH="$(KIOU_HOOK_DIR):$$PYTHONPATH" \
 	 ./shared/tools/build_patched_ipa.sh \
-	  --recipe    "$(IPA_RECIPE)" \
-	  --framework "$(IPA_FRAMEWORK)" \
-	  --dylib     "$(IPA_DYLIB)" \
-	  --input     "$(DECRYPTED_IPA)" \
-	  --output    "$(CURDIR)/packages/ipa/$(basename $(notdir $(DECRYPTED_IPA)))-patched.ipa"
+	  --recipe            "$(IPA_RECIPE)" \
+	  --framework         "$(IPA_FRAMEWORK)" \
+	  --dylib             "$(IPA_DYLIB)" \
+	  --input             "$(DECRYPTED_IPA)" \
+	  --output            "$(IPA_OUT)" \
+	  --bundle-id-suffix  "$(BUNDLE_ID_SUFFIX)"
+
+# ---------------------------------------------------------------------------
+# TrollStore-backed IPA deploy on a JB device.
+#   Ships the patched IPA to the device via SSH, installs it through
+#   trollstorehelper (force flag, so it overrides an existing Sideloadly /
+#   AltStore build with the same bundle id), and relaunches the app.
+#   Kept separate from Theos's own `install::` (JB rootless .deb install)
+#   so `make deploy` targets only the IPA path and doesn't drag in the
+#   JB dpkg install as a side effect.
+#
+#   TrollStore vs TrollStore Lite: the trollstorehelper binary lives in
+#   different places per install flavour. The default TROLLSTORE_HELPER
+#   value below empty-strings out on purpose so the target falls back
+#   to SSH-discovery, which walks /var/jb/Applications and the App
+#   bundle tree. TrollStoreLite.app is ranked above plain TrollStore.app
+#   so a Lite device wins if both directories exist. The old
+#   TrollStorePersistenceHelper.app directory is excluded: on Lite it
+#   never gets installed, and a leftover from a previous non-Lite JB
+#   session often has a helper binary whose entitlements have been
+#   invalidated, which SIGKILLs on invocation and shows up as ssh 255.
+#
+#   Remote staging path: /var/mobile/Documents/, not /tmp/.
+#   trollstorehelper runs in a sandbox that cannot read /tmp/ — an IPA
+#   staged there is rejected with return code 166
+#   ("IPA does not exist or is not accessible"), even though the file
+#   is physically present. Documents/ is one of the few locations both
+#   root (scp target) and mobile (trollstorehelper runtime) can access;
+#   the recipe chowns after scp so mobile can read the payload.
+#
+#   Override on the command line or in .env:
+#     TROLLSTORE_HELPER        — pin trollstorehelper path (skips discovery)
+#     INSTALLED_IPA_BUNDLE_ID  — bundle id used to relaunch the app
+#     DEVICE_USER              — SSH user (defaults to root)
+#     REMOTE_STAGING_DIR       — sandbox-visible dir to scp the IPA into
+#     THEOS_DEVICE_PORT        — SSH port. Needed when the device is reached
+#                                through an iproxy forward on the host
+#                                (THEOS_DEVICE_IP=host.docker.internal), where
+#                                port 22 answers as the host, not the phone.
+# ---------------------------------------------------------------------------
+TROLLSTORE_HELPER        ?=
+INSTALLED_IPA_BUNDLE_ID  ?= $(TARGET_BUNDLE_ID)$(if $(BUNDLE_ID_SUFFIX),.$(BUNDLE_ID_SUFFIX),)
+DEVICE_USER              ?= root
+REMOTE_STAGING_DIR       ?= /var/mobile/Documents
+THEOS_DEVICE_PORT        ?= 22
+# scp spells the port -P, ssh spells it -p.
+DEVICE_SCP               := scp -P $(THEOS_DEVICE_PORT)
+DEVICE_SSH               := ssh -p $(THEOS_DEVICE_PORT)
+
+.PHONY: deploy
+deploy: ipa
+	@helper='$(TROLLSTORE_HELPER)'; \
+	if [ -z "$$helper" ]; then \
+	  echo "==> discovering trollstorehelper on $(THEOS_DEVICE_IP)"; \
+	  helper=$$($(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	    "find /var/jb/Applications /var/containers/Bundle/Application \
+	          -maxdepth 4 -type f -name trollstorehelper 2>/dev/null \
+	     | grep -v 'PersistenceHelper' \
+	     | awk 'BEGIN{FS=\"/\"} {for(i=1;i<=NF;i++) if(\$$i ~ /^TrollStoreLite\\.app\$$/){print \"0 \"\$$0; next}} {print \"1 \"\$$0}' \
+	     | sort -k1,1 | awk '{print \$$2}' | head -n1"); \
+	fi; \
+	if [ -z "$$helper" ]; then \
+	  echo "error: trollstorehelper not found on device"; \
+	  echo "       override with: make deploy TROLLSTORE_HELPER=<path>"; \
+	  exit 1; \
+	fi; \
+	echo "==> helper: $$helper"; \
+	echo "==> scp $(notdir $(IPA_OUT)) -> $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(THEOS_DEVICE_PORT):$(REMOTE_STAGING_DIR)/"; \
+	$(DEVICE_SCP) -q $(IPA_OUT) $(DEVICE_USER)@$(THEOS_DEVICE_IP):$(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT)); \
+	$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	    "chown mobile:mobile '$(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))' 2>/dev/null || true"; \
+	echo "==> trollstorehelper install force $(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))"; \
+	$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) \
+	    "$$helper install force $(REMOTE_STAGING_DIR)/$(notdir $(IPA_OUT))"
+	@echo "==> launching $(TARGET_PROCESS) ($(INSTALLED_IPA_BUNDLE_ID))"
+	@$(DEVICE_SSH) $(DEVICE_USER)@$(THEOS_DEVICE_IP) 'sleep 1; (open $(INSTALLED_IPA_BUNDLE_ID) 2>/dev/null \
+	    || uiopen $(INSTALLED_IPA_BUNDLE_ID):// 2>/dev/null \
+	    || echo "no launcher tool; start $(TARGET_PROCESS) manually")'
 
 .PHONY: hooks
 hooks::
