@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "version": {
+    "source": "control",
+    "derivedFiles": [
+      "README.md",
+      "README.ja.md",
+      "CHANGELOG.md"
+    ],
+    "bumpCommand": null
+  },
+  "branches": {
+    "source": "develop",
+    "target": "master"
+  },
+  "pullRequest": {
+    "titleTemplate": "chore: release v{version}",
+    "mergeMethod": "merge"
+  },
+  "tag": {
+    "template": "v{version}",
+    "annotated": true
+  },
+  "checks": {
+    "required": [
+      "Build (chinlan)",
+      "Build (jailed)",
+      "Build (substrate)",
+      "Commit Lint"
+    ]
+  },
+  "workflows": {
+    "releaseFiles": [
+      ".github/workflows/deployment.yaml",
+      ".github/workflows/backmerge.yaml"
+    ],
+    "triggerFingerprint": "e382944f05599d2c6ac5f47a7b9848db9d9b122cc6a399ddc01fe958671dfdb4"
+  },
+  "notes": {
+    "mode": "file",
+    "file": "CHANGELOG.md"
+  },
+  "artifacts": {
+    "buildCommands": [],
+    "paths": []
+  }
+}
