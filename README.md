@@ -187,10 +187,11 @@ server-side. The recommended target is always the **latest supported version**.
 | Kifu Autosave | ✓ | ✓ | ✓ | ✓ |
 | **Account Switching** | — | ✓ | ✓ | ✓ |
 
-1.5.0 (build 22) has not been verified on a device yet: the hook sites and
-struct offsets were checked statically against the 1.5.0 `dump.cs` and Mach-O
-only. Kifu Autosave in particular goes through a different `KIFWriter.Write`
-overload there, so treat it as untested until it has run on a real device.
+1.5.0 (build 22) was checked on a device (iPhone, iOS 15.8.3): the hooks
+install and a CPU match is saved as a KIF with both player names, through the
+`KIFWriter.Write(Position, IReadOnlyList<Move>, opts)` overload that 1.5.0
+uses. The frame-rate override, the AFK suppression, online matches, local
+matches and replays have not been run on 1.5.0 yet.
 
 Account Switching requires hook sites introduced in 1.0.2. Every build shape
 pins its addresses at build time via `TARGET_VERSION`: the Patched IPA picks
