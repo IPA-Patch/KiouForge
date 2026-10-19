@@ -76,10 +76,8 @@
 // addresses come from KIOUHookSiteAddr and follow KIOU_HOOK_TARGET_BUILD
 // instead of being pinned to one app version here.
 
-// KIFWriteOptions instance size needed for the raw-buffer trick. See the
-// KIFOPTS_OFF_* constants in Internal.h for the field map. Last field
-// (EndingLabel) sits at 0x48, ends at 0x50; we pad to 0x60 for headroom.
-#define KIFWRITEOPTIONS_SIZE        0x60
+// KIFWRITEOPTIONS_SIZE (raw-buffer trick) and the KIFOPTS_OFF_* field map
+// live in Internal.h.
 
 // Project.ShogiCore.GameController -> private WinReason <Reason>k__BackingField at +0x30
 // (dump.cs L1484318). The enum is a 4-byte int.
@@ -102,11 +100,8 @@
 #define GSS_OFF_BLACK_PLAYER_INFO   0x50  // ReactiveProperty<PlayerInfo>*
 #define GSS_OFF_WHITE_PLAYER_INFO   0x58  // ReactiveProperty<PlayerInfo>*
 
-// Each IMatchMode subclass stores its GameStateStore at a per-mode
-// offset. We currently only walk this for OnlinePvPMode (the only mode
-// where MatchConfig is initialized to placeholders and the real names
-// arrive over the wire).
-#define ONLINEPVPMODE_OFF_STATE_STORE  0x28  // GameStateStore*
+// Each IMatchMode subclass stores its GameStateStore at a per-mode,
+// per-build offset (kKiouMatchModeStateStoreOffsets in Internal.h).
 
 // ReactiveProperty<T> currentValue offset. dump.cs lists every generic
 // instantiation as "offset 0x0", so this had to be probed at runtime —
@@ -145,10 +140,33 @@ typedef void  (*KIFWriteOptions_Ctor_t)(void *opts);
 typedef void *(*KIFWriter_Write_t)(void *record, void *opts);
 typedef void *(*Position_ToSFEN_t)(void *position);
 
+#if KIOU_HOOK_TARGET_BUILD >= 22
+// KIOU 1.5.0 dropped KIFWriter.Write(RecordManager, KIFWriteOptions); only
+// Write(Position initialPosition, IReadOnlyList<Move> mainLineMoves,
+// KIFWriteOptions) remains, so the KIF path pulls both out of the
+// RecordManager ParseUSI returned. None of these three has a KIOU-Hook
+// catalog row (KIOU_HOOK_RVA_KIFWRITER_WRITE is 0x0 on 1.5.0), so they are
+// addressed by RVA straight from dump.cs (assets/1.5.0/dump.cs).
+//   KIFWriter.Write(Position, IReadOnlyList<Move>, KIFWriteOptions)  L1176660
+//   RecordManager.get_MainLineMoves()  (self-only getter)           L1176767
+//   RecordManager.get_InitialPosition() (self-only getter, Slot 16)  L1176776
+#define KIOU150_RVA_KIFWRITER_WRITE3           0x5EA8EBCUL
+#define KIOU150_RVA_RECORD_GET_MAINLINE_MOVES  0x5EACA10UL
+#define KIOU150_RVA_RECORD_GET_INITIAL_POS     0x5EACA28UL
+typedef void *(*KIFWriter_Write3_t)(void *initialPos, void *mainLineMoves,
+                                    void *opts);
+typedef void *(*RecordManager_Get_t)(void *record);
+static KIFWriter_Write3_t   g_KIFWriter_Write3   = NULL;
+static RecordManager_Get_t  g_Record_GetInitPos  = NULL;
+static RecordManager_Get_t  g_Record_GetMoves    = NULL;
+#endif
+
 static GameCtrl_GetUSIText_t   g_GetUSIText      = NULL;
 static USIParser_ParseUSI_t    g_ParseUSI        = NULL;
 static KIFWriteOptions_Ctor_t  g_KIFOpts_Ctor    = NULL;
+#if KIOU_HOOK_TARGET_BUILD < 22
 static KIFWriter_Write_t       g_KIFWriter_Write = NULL;
+#endif
 static Position_ToSFEN_t       g_PositionToSFEN  = NULL;
 
 // KIOUHookSiteAddr returns 0 for a name the catalog doesn't carry; return
@@ -179,10 +197,25 @@ static void resolveIl2cppFunctions(void) {
         g_KIFOpts_Ctor = (KIFWriteOptions_Ctor_t)
             resolveSite(KIOU_HOOK_NAME_KIFWRITEOPTIONS_CTOR);
     }
+#if KIOU_HOOK_TARGET_BUILD >= 22
+    if (!g_KIFWriter_Write3) {
+        g_KIFWriter_Write3 = (KIFWriter_Write3_t)(g_unityBase +
+            KIOU150_RVA_KIFWRITER_WRITE3);
+    }
+    if (!g_Record_GetInitPos) {
+        g_Record_GetInitPos = (RecordManager_Get_t)(g_unityBase +
+            KIOU150_RVA_RECORD_GET_INITIAL_POS);
+    }
+    if (!g_Record_GetMoves) {
+        g_Record_GetMoves = (RecordManager_Get_t)(g_unityBase +
+            KIOU150_RVA_RECORD_GET_MAINLINE_MOVES);
+    }
+#else
     if (!g_KIFWriter_Write) {
         g_KIFWriter_Write = (KIFWriter_Write_t)
             resolveSite(KIOU_HOOK_NAME_KIFWRITER_WRITE);
     }
+#endif
     if (!g_PositionToSFEN) {
         g_PositionToSFEN = (Position_ToSFEN_t)
             resolveSite(KIOU_HOOK_NAME_POSITION_TO_SFEN);
@@ -210,9 +243,16 @@ NSString *KIOUKifTextFromGameController(void *gameCtrl,
                                     void *stateStore,
                                     const char *matchModeTag) {
     resolveIl2cppFunctions();
+#if KIOU_HOOK_TARGET_BUILD >= 22
+    if (!g_GetUSIText || !g_ParseUSI || !g_KIFOpts_Ctor ||
+        !g_KIFWriter_Write3 || !g_Record_GetInitPos || !g_Record_GetMoves) {
+        return nil;
+    }
+#else
     if (!g_GetUSIText || !g_ParseUSI || !g_KIFOpts_Ctor || !g_KIFWriter_Write) {
         return nil;
     }
+#endif
     if (!ptrLooksValid(gameCtrl)) return nil;
 
     // Step 1: GetUSIText(self) → "position startpos moves 2g2f 1c1d ..."
@@ -272,6 +312,23 @@ NSString *KIOUKifTextFromGameController(void *gameCtrl,
 
     // Step 4: KIFWriter.Write(record, opts) → KIF 2.0 string
     void *kifStrPtr = NULL;
+#if KIOU_HOOK_TARGET_BUILD >= 22
+    // 1.5.0: Write(initialPosition, mainLineMoves, opts). The moves list is
+    // only passed through (IReadOnlyList<Move>*), never read here.
+    @try {
+        void *initPos = g_Record_GetInitPos(recordPtr);
+        void *moves   = g_Record_GetMoves(recordPtr);
+        if (!ptrLooksValid(initPos) || !ptrLooksValid(moves)) {
+            IPALog(@"[KIF] record accessor returned null");
+            return nil;
+        }
+        kifStrPtr = g_KIFWriter_Write3(initPos, moves, opts);
+    } @catch (NSException *e) {
+        IPALog([NSString stringWithFormat:
+                  @"[KIF] KIFWriter.Write threw: %@", e]);
+        return nil;
+    }
+#else
     @try {
         kifStrPtr = g_KIFWriter_Write(recordPtr, opts);
     } @catch (NSException *e) {
@@ -279,6 +336,7 @@ NSString *KIOUKifTextFromGameController(void *gameCtrl,
                   @"[KIF] KIFWriter.Write threw: %@", e]);
         return nil;
     }
+#endif
     if (!ptrLooksValid(kifStrPtr)) {
         IPALog(@"[KIF] KIFWriter.Write returned null");
         return nil;
@@ -591,7 +649,7 @@ static NSString *kif_build_time_rule_label(void *tc) {
 // `opts` is not a managed object (klass header is NULL — see
 // Helpers.m's raw-buffer trick). il2cpp's GC therefore does not
 // treat the il2cpp string pointers we store at offsets 0x10 / 0x18 /
-// 0x30 / 0x38 / 0x48 as roots. The strings remain live across
+// 0x30 / 0x38 / ENDING_LABEL as roots. The strings remain live across
 // KIFWriter.Write only because Unity's Boehm conservative GC scans
 // the running threads' stacks for pointer-shaped values, and the
 // call is short enough (microseconds) that a GC pass during it is
@@ -788,14 +846,15 @@ void KIOUKifFillWriteOptions(void *opts,
                   @"        +0x28 (StartDT hi) = 0x%016llx\n"
                   @"        +0x30 (Title) = 0x%016llx\n"
                   @"        +0x38 (TimeRule) = 0x%016llx\n"
-                  @"        +0x48 (Ending) = 0x%016llx",
-                  *(unsigned long long *)(base + 0x10),
-                  *(unsigned long long *)(base + 0x18),
-                  *(unsigned long long *)(base + 0x20),
-                  *(unsigned long long *)(base + 0x28),
-                  *(unsigned long long *)(base + 0x30),
-                  *(unsigned long long *)(base + 0x38),
-                  *(unsigned long long *)(base + 0x48));
+                  @"        +0x%x (Ending) = 0x%016llx",
+                  *(unsigned long long *)(base + KIFOPTS_OFF_BLACK_PLAYER_NAME),
+                  *(unsigned long long *)(base + KIFOPTS_OFF_WHITE_PLAYER_NAME),
+                  *(unsigned long long *)(base + KIFOPTS_OFF_START_DATETIME),
+                  *(unsigned long long *)(base + KIFOPTS_OFF_START_DATETIME + 8),
+                  *(unsigned long long *)(base + KIFOPTS_OFF_MATCH_TITLE),
+                  *(unsigned long long *)(base + KIFOPTS_OFF_TIME_RULE_LABEL),
+                  KIFOPTS_OFF_ENDING_LABEL,
+                  *(unsigned long long *)(base + KIFOPTS_OFF_ENDING_LABEL));
 }
 
 // ---------------------------------------------------------------------------

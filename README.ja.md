@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-v0.2.0-2f80ed?style=flat-square" />
-  <img alt="targets KIOU" src="https://img.shields.io/badge/targets-KIOU%201.0.1%E2%80%931.1.0-ff66a3?style=flat-square" />
+  <img alt="version" src="https://img.shields.io/badge/version-v0.3.0-2f80ed?style=flat-square" />
+  <img alt="targets KIOU" src="https://img.shields.io/badge/targets-KIOU%201.0.1%E2%80%931.5.0-ff66a3?style=flat-square" />
   <img alt="platform" src="https://img.shields.io/badge/platform-iOS%2013.0%2B-blue?style=flat-square" />
   <img alt="arch" src="https://img.shields.io/badge/arch-arm64%20rootless-555?style=flat-square" />
   <img alt="runs" src="https://img.shields.io/badge/runs-client--side%20only-1f9d55?style=flat-square" />
@@ -136,13 +136,15 @@ KIOU はオンラインゲームのため頻繁にアップデートされ、古
 
 ### 機能 × バージョン対応表
 
-| 機能 | 1.0.1 (build 11) | 1.0.2 (build 12) | 1.1.0 (build 15) |
-|---|:---:|:---:|:---:|
-| FPS Override | ✓ | ✓ | ✓ |
-| AFK Guard | ✓ | ✓ | ✓ |
-| Analysis Tune | ✓ | ✓ | ✓ |
-| Kifu Autosave | ✓ | ✓ | ✓ |
-| **アカウント切り替え** | — | ✓ | ✓ |
+| 機能 | 1.0.1 (build 11) | 1.0.2 (build 12) | 1.1.0 (build 15) | 1.5.0 (build 22) |
+|---|:---:|:---:|:---:|:---:|
+| FPS Override | ✓ | ✓ | ✓ | ✓ |
+| AFK Guard | ✓ | ✓ | ✓ | ✓ |
+| Analysis Tune | ✓ | ✓ | ✓ | ✓ |
+| Kifu Autosave | ✓ | ✓ | ✓ | ✓ |
+| **アカウント切り替え** | — | ✓ | ✓ | ✓ |
+
+1.5.0 (build 22) は実機で未検証です。フックサイトと構造体オフセットは 1.5.0 の `dump.cs` と Mach-O に対する静的な確認のみで、とくに Kifu Autosave は別の `KIFWriter.Write` オーバーロードを経由するため、実機で動かすまでは未確認として扱ってください。
 
 アカウント切り替えは 1.0.2 で追加されたフックサイトが必要なため、1.0.1 では非対応です。アドレスはどの配布形式でもビルド時に `TARGET_VERSION` で決まります。Patched IPA はレシピを、dylib は対応する RVA ヘッダを選択します。
 
@@ -150,7 +152,7 @@ KIOU はオンラインゲームのため頻繁にアップデートされ、古
 
 | | |
 |---|---|
-| **最新対応 KIOU** | `1.1.0`（CFBundleVersion 15） |
+| **最新対応 KIOU** | `1.5.0`（CFBundleVersion 22） |
 | **KIOU の最低 iOS バージョン** | 10.0（アプリの `MinimumOSVersion`） |
 | **KiouForge の最低 iOS バージョン** | 13.0（`UIWindowScene` が必要） |
 | **動作確認済み** | iOS 15.0 〜 26、arm64 |
@@ -187,9 +189,9 @@ TrollStore が使えないデバイス向けです。[Sideloadly](https://sidelo
 **復号済み** の KIOU IPA が必要です（[palera1n](https://palera.in/) + Filza または [TrollDecrypt](https://github.com/donato-fiore/TrollDecrypt) で取得できます）。App Store からダウンロードした IPA は FairPlay で暗号化されているため、そのままでは使用できません。
 
 ```sh
-# デフォルト（1.1.0）
-mkdir -p assets/1.1.0
-cp ~/Downloads/Kiou-1.1.0.ipa assets/1.1.0/
+# デフォルト（1.5.0）
+mkdir -p assets/1.5.0
+cp ~/Downloads/Kiou-1.5.0.ipa assets/1.5.0/
 make ipa
 # -> packages/ipa/KiouForge-patched.ipa
 
@@ -201,8 +203,8 @@ make ipa TARGET_VERSION=1.0.2
 
 ```sh
 # 特定バージョンの dump + IPA でレシピを検証
-PYTHONPATH=shared:vendor/KIOU-Hook TARGET_VERSION=1.1.0 python3 -m tools.verify_sites \
+PYTHONPATH=shared:vendor/KIOU-Hook TARGET_VERSION=1.5.0 python3 -m tools.verify_sites \
   --recipe recipes \
-  --index  assets/1.1.0/dump.cs.index.json \
-  --ipa    assets/1.1.0/Kiou-1.1.0.ipa
+  --index  assets/1.5.0/dump.cs.index.json \
+  --ipa    assets/1.5.0/Kiou-1.5.0.ipa
 ```

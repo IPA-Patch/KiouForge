@@ -4,6 +4,21 @@ All notable changes to KiouForge are documented here.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-19
+
+### Added
+
+- **KIOU 1.5.0 support** (CFBundleVersion 22). All hook sites were checked statically against the 1.5.0 `dump.cs` and Mach-O; the `_gameAdapter` / `_stateStore` / `_matchConfig` offsets of the five `IMatchMode` implementations and the `KIFWriteOptions` layout are switched per build, and builds 11 / 12 / 15 are unchanged.
+
+### Changed
+
+- `TARGET_VERSION` now defaults to `1.5.0`; `1.0.1`, `1.0.2` and `1.1.0` remain buildable by passing it explicitly.
+- On 1.5.0 the KIF export goes through `KIFWriter.Write(Position, IReadOnlyList<Move>, KIFWriteOptions)`, with the initial position and main line taken from the `RecordManager` that `ParseUSI` returns, because the `Write(RecordManager, KIFWriteOptions)` overload no longer exists. These three methods are addressed by RVA from `dump.cs` rather than through the KIOU-Hook catalog.
+
+### Known issues
+
+- Not verified on a device against KIOU 1.5.0. The static checks pass, but Kifu Autosave (new `KIFWriter.Write` overload, new `KIFWriteOptions` layout) in particular has not run on real hardware yet.
+
 ## [0.2.2] — 2026-08-01
 
 ### Added
