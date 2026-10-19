@@ -68,16 +68,48 @@ typedef struct {
 // in X2 so we can pick the right `_gameAdapter` field offset on `self` and
 // recover the live GameController without guessing.
 //
-// Reference (dump.cs):
-//   AIMatchMode      _gameAdapter @ 0x48
-//   CPUStreamMode    _gameAdapter @ 0x50
-//   LocalPvPMode     _gameAdapter @ 0x18
-//   OnlinePvPMode    _gameAdapter @ 0x30
-//   RecordReplayMode _gameAdapter @ 0x18
+// Reference (dump.cs, `_gameAdapter` field offset per build):
+//                    1.0.1/1.0.2/1.1.0 (11/12/15)   1.5.0 (22)
+//   AIMatchMode      0x48                            0x38
+//   CPUStreamMode    0x50                            0x40
+//   LocalPvPMode     0x18                            0x18
+//   OnlinePvPMode    0x30                            0x58
+//   RecordReplayMode 0x18                            0x18
+// 1.5.0 dropped the Sunfish4 / UseRshogi fields from AIMatchMode and
+// CPUStreamMode and grew OnlinePvPMode's heartbeat state, so those three
+// moved (and so did every _stateStore, see below); the other two did not.
 //
 // The order MUST match _SITES observer rows in recipes/ — the recipe bakes
 // each mode index as `MOVZ X2,#imm` in the cave.
 // ---------------------------------------------------------------------------
+
+// IMatchMode subclass field offsets (dump.cs, see the table above).
+// OnlinePvPMode also supplies the MatchConfig the KIF writer reads player
+// names from (OnlinePvPMode _matchConfig); its _stateStore is the 0x50 /
+// 0x28 entry of kKiouMatchModeStateStoreOffsets below.
+#if KIOU_HOOK_TARGET_BUILD >= 22
+#define AIMATCHMODE_OFF_GAME_ADAPTER      0x38
+#define AIMATCHMODE_OFF_STATE_STORE       0x30
+#define CPUSTREAMMODE_OFF_GAME_ADAPTER    0x40
+#define CPUSTREAMMODE_OFF_STATE_STORE     0x38
+#define ONLINEPVPMODE_OFF_GAME_ADAPTER    0x58
+#define ONLINEPVPMODE_OFF_STATE_STORE     0x50  // GameStateStore*
+#define ONLINEPVPMODE_OFF_MATCHCONFIG     0x60  // MatchConfig*
+#else
+#define AIMATCHMODE_OFF_GAME_ADAPTER      0x48
+#define AIMATCHMODE_OFF_STATE_STORE       0x40
+#define CPUSTREAMMODE_OFF_GAME_ADAPTER    0x50
+#define CPUSTREAMMODE_OFF_STATE_STORE     0x48
+#define ONLINEPVPMODE_OFF_GAME_ADAPTER    0x30
+#define ONLINEPVPMODE_OFF_STATE_STORE     0x28  // GameStateStore*
+#define ONLINEPVPMODE_OFF_MATCHCONFIG     0x38  // MatchConfig*
+#endif
+// LocalPvPMode and RecordReplayMode: _stateStore @ 0x10, _gameAdapter @ 0x18
+// on every build.
+#define LOCALPVPMODE_OFF_STATE_STORE      0x10
+#define LOCALPVPMODE_OFF_GAME_ADAPTER     0x18
+#define REPLAYMODE_OFF_STATE_STORE        0x10
+#define REPLAYMODE_OFF_GAME_ADAPTER       0x18
 
 // ShogiGameAdapter -> Project.ShogiCore.GameController field offset.
 #define KIOU_ADAPTER_OFF_GAMECTRL 0x10
@@ -105,13 +137,26 @@ NSString *KIOUKifTextFromGameController(void *gameCtrl,
                                          void *stateStore,
                                          const char *matchModeTag);
 
-// KIFWriteOptions field offsets (KIOU 1.0.1 build 11).
+// KIFWriteOptions field offsets (dump.cs, Project.ShogiCore.KIFWriteOptions).
+// 1.5.0 inserted EndingThinkingTimeMicros (0x48) ahead of EndingLabel and
+// appended EndingComment (0x60) / WinnerSide (0x68, Nullable<PlayerSide>),
+// so the instance now ends at 0x70. Offsets up to TimeRuleLabel are the same
+// on every build.
 #define KIFOPTS_OFF_BLACK_PLAYER_NAME 0x10
 #define KIFOPTS_OFF_WHITE_PLAYER_NAME 0x18
 #define KIFOPTS_OFF_START_DATETIME    0x20
 #define KIFOPTS_OFF_MATCH_TITLE       0x30
 #define KIFOPTS_OFF_TIME_RULE_LABEL   0x38
+#if KIOU_HOOK_TARGET_BUILD >= 22
+#define KIFOPTS_OFF_ENDING_LABEL      0x58
+// Raw zeroed buffer handed to KIFWriter.Write (see Kif/Helpers.m); padded
+// past the last field for headroom.
+#define KIFWRITEOPTIONS_SIZE          0x80
+#else
 #define KIFOPTS_OFF_ENDING_LABEL      0x48
+// Last field (EndingLabel) ends at 0x50; padded to 0x60 for headroom.
+#define KIFWRITEOPTIONS_SIZE          0x60
+#endif
 
 void *KIOUIl2cppStringNew(const char *utf8);
 void  KIOUKifFillWriteOptions(void *opts,
@@ -157,11 +202,11 @@ NSString *KIOUKifuModeLabel(KiouMatchMode m);
 // the observer rows of _SITES in recipes/ — the recipe bakes each index as
 // `MOVZ X2,#imm` in the cave.
 static const uintptr_t kKiouMatchModeAdapterOffsets[KIOU_MMODE_COUNT] = {
-    [KIOU_MMODE_AI_MATCH]      = 0x48,
-    [KIOU_MMODE_CPU_STREAM]    = 0x50,
-    [KIOU_MMODE_LOCAL_PVP]     = 0x18,
-    [KIOU_MMODE_ONLINE_PVP]    = 0x30,
-    [KIOU_MMODE_RECORD_REPLAY] = 0x18,
+    [KIOU_MMODE_AI_MATCH]      = AIMATCHMODE_OFF_GAME_ADAPTER,
+    [KIOU_MMODE_CPU_STREAM]    = CPUSTREAMMODE_OFF_GAME_ADAPTER,
+    [KIOU_MMODE_LOCAL_PVP]     = LOCALPVPMODE_OFF_GAME_ADAPTER,
+    [KIOU_MMODE_ONLINE_PVP]    = ONLINEPVPMODE_OFF_GAME_ADAPTER,
+    [KIOU_MMODE_RECORD_REPLAY] = REPLAYMODE_OFF_GAME_ADAPTER,
 };
 
 // IMatchMode self -> _stateStore field offsets. All five IMatchMode
@@ -170,11 +215,11 @@ static const uintptr_t kKiouMatchModeAdapterOffsets[KIOU_MMODE_COUNT] = {
 // player names via the same ReactiveProperty<PlayerInfo> path online
 // matches use.
 static const uintptr_t kKiouMatchModeStateStoreOffsets[KIOU_MMODE_COUNT] = {
-    [KIOU_MMODE_AI_MATCH]      = 0x40,
-    [KIOU_MMODE_CPU_STREAM]    = 0x48,
-    [KIOU_MMODE_LOCAL_PVP]     = 0x10,
-    [KIOU_MMODE_ONLINE_PVP]    = 0x28,
-    [KIOU_MMODE_RECORD_REPLAY] = 0x10,
+    [KIOU_MMODE_AI_MATCH]      = AIMATCHMODE_OFF_STATE_STORE,
+    [KIOU_MMODE_CPU_STREAM]    = CPUSTREAMMODE_OFF_STATE_STORE,
+    [KIOU_MMODE_LOCAL_PVP]     = LOCALPVPMODE_OFF_STATE_STORE,
+    [KIOU_MMODE_ONLINE_PVP]    = ONLINEPVPMODE_OFF_STATE_STORE,
+    [KIOU_MMODE_RECORD_REPLAY] = REPLAYMODE_OFF_STATE_STORE,
 };
 
 static const char *const kKiouMatchModeTags[KIOU_MMODE_COUNT] = {

@@ -20,7 +20,7 @@ TARGET_PROCESS           := KIOU
 TARGET_BUNDLE_ID         := com.neconome.shogi
 
 # Override on the command line: make ipa TARGET_VERSION=1.0.2
-TARGET_VERSION           ?= 1.1.0
+TARGET_VERSION           ?= 1.5.0
 DECRYPTED_IPA            ?= $(CURDIR)/assets/$(TARGET_VERSION)/Kiou-$(TARGET_VERSION).ipa
 
 # KIOU-Hook selects its per-version RVA header (vendor/KIOU-Hook/rva/) by
@@ -30,9 +30,10 @@ DECRYPTED_IPA            ?= $(CURDIR)/assets/$(TARGET_VERSION)/Kiou-$(TARGET_VER
 KIOU_BUILD_1.0.1         := 11
 KIOU_BUILD_1.0.2         := 12
 KIOU_BUILD_1.1.0         := 15
+KIOU_BUILD_1.5.0         := 22
 KIOU_HOOK_TARGET_BUILD   := $(KIOU_BUILD_$(TARGET_VERSION))
 ifeq ($(KIOU_HOOK_TARGET_BUILD),)
-$(error unknown TARGET_VERSION '$(TARGET_VERSION)'; known: 1.0.1 1.0.2 1.1.0)
+$(error unknown TARGET_VERSION '$(TARGET_VERSION)'; known: 1.0.1 1.0.2 1.1.0 1.5.0)
 endif
 IPA_RECIPE               := recipes.__init__
 KIOU_HOOK_DIR            := $(CURDIR)/vendor/KIOU-Hook

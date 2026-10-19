@@ -4,6 +4,26 @@ All notable changes to KiouForge are documented here.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-19
+
+### Added
+
+- **KIOU 1.5.0 support** (CFBundleVersion 22). All hook sites were checked statically against the 1.5.0 `dump.cs` and Mach-O; the `_gameAdapter` / `_stateStore` / `_matchConfig` offsets of the five `IMatchMode` implementations and the `KIFWriteOptions` layout are switched per build, and builds 11 / 12 / 15 are unchanged.
+
+### Changed
+
+- `TARGET_VERSION` now defaults to `1.5.0`; `1.0.1`, `1.0.2` and `1.1.0` remain buildable by passing it explicitly.
+- On 1.5.0 the KIF export goes through `KIFWriter.Write(Position, IReadOnlyList<Move>, KIFWriteOptions)`, with the initial position and main line taken from the `RecordManager` that `ParseUSI` returns, because the `Write(RecordManager, KIFWriteOptions)` overload no longer exists. These three methods are addressed by RVA from `dump.cs` rather than through the KIOU-Hook catalog.
+
+### Verified
+
+- On a device (iPhone, iOS 15.8.3, KIOU 1.5.0): the tweak loads and installs its hooks, and a CPU match is saved as a KIF with both player names (`先手：Dummy` / `後手：CPU（初級）`).
+
+### Known issues
+
+- Not checked on a device: the frame-rate override and the AFK suppression on KIOU 1.5.0, online matches, local matches and replays, and builds for KIOU 1.1.0 and earlier.
+- KIF files have no consumed time or winner.
+
 ## [0.2.2] — 2026-08-01
 
 ### Added
