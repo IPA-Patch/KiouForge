@@ -99,9 +99,6 @@ NSString *KIOUKifWriterEmit(void *gameCtrl,
 // Either being off skips emission silently.
 // ===========================================================================
 
-#define ONLINEPVPMODE_OFF_STATE_STORE   0x28
-#define ONLINEPVPMODE_OFF_MATCHCONFIG   0x38
-
 static void *kf_resolveGameController(void *self, uint32_t mode_index) {
     if (mode_index >= KIOU_MMODE_COUNT) {
         IPALog([NSString stringWithFormat:

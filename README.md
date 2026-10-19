@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-v0.2.0-2f80ed?style=flat-square" />
-  <img alt="targets KIOU" src="https://img.shields.io/badge/targets-KIOU%201.0.1%E2%80%931.1.0-ff66a3?style=flat-square" />
+  <img alt="version" src="https://img.shields.io/badge/version-v0.3.0-2f80ed?style=flat-square" />
+  <img alt="targets KIOU" src="https://img.shields.io/badge/targets-KIOU%201.0.1%E2%80%931.5.0-ff66a3?style=flat-square" />
   <img alt="platform" src="https://img.shields.io/badge/platform-iOS%2013.0%2B-blue?style=flat-square" />
   <img alt="arch" src="https://img.shields.io/badge/arch-arm64%20rootless-555?style=flat-square" />
   <img alt="runs" src="https://img.shields.io/badge/runs-client--side%20only-1f9d55?style=flat-square" />
@@ -179,13 +179,18 @@ server-side. The recommended target is always the **latest supported version**.
 
 ### Feature × version matrix
 
-| Feature | 1.0.1 (build 11) | 1.0.2 (build 12) | 1.1.0 (build 15) |
-|---|:---:|:---:|:---:|
-| FPS Override | ✓ | ✓ | ✓ |
-| AFK Guard | ✓ | ✓ | ✓ |
-| Analysis Tune | ✓ | ✓ | ✓ |
-| Kifu Autosave | ✓ | ✓ | ✓ |
-| **Account Switching** | — | ✓ | ✓ |
+| Feature | 1.0.1 (build 11) | 1.0.2 (build 12) | 1.1.0 (build 15) | 1.5.0 (build 22) |
+|---|:---:|:---:|:---:|:---:|
+| FPS Override | ✓ | ✓ | ✓ | ✓ |
+| AFK Guard | ✓ | ✓ | ✓ | ✓ |
+| Analysis Tune | ✓ | ✓ | ✓ | ✓ |
+| Kifu Autosave | ✓ | ✓ | ✓ | ✓ |
+| **Account Switching** | — | ✓ | ✓ | ✓ |
+
+1.5.0 (build 22) has not been verified on a device yet: the hook sites and
+struct offsets were checked statically against the 1.5.0 `dump.cs` and Mach-O
+only. Kifu Autosave in particular goes through a different `KIFWriter.Write`
+overload there, so treat it as untested until it has run on a real device.
 
 Account Switching requires hook sites introduced in 1.0.2. Every build shape
 pins its addresses at build time via `TARGET_VERSION`: the Patched IPA picks
@@ -195,7 +200,7 @@ the recipe, and the dylib picks the matching RVA header.
 
 | | |
 |---|---|
-| **Latest supported KIOU** | `1.1.0` (CFBundleVersion 15) |
+| **Latest supported KIOU** | `1.5.0` (CFBundleVersion 22) |
 | **KIOU minimum iOS** | 10.0 (`MinimumOSVersion` in app bundle) |
 | **KiouForge minimum iOS** | 13.0 (requires `UIWindowScene`) |
 | **Tested on** | iOS 15.0 – 26, arm64 |
@@ -238,9 +243,9 @@ Filza, or [TrollDecrypt](https://github.com/donato-fiore/TrollDecrypt)). The
 App Store download is FairPlay-encrypted and cannot be patched directly.
 
 ```sh
-# default (1.1.0)
-mkdir -p assets/1.1.0
-cp ~/Downloads/Kiou-1.1.0.ipa assets/1.1.0/
+# default (1.5.0)
+mkdir -p assets/1.5.0
+cp ~/Downloads/Kiou-1.5.0.ipa assets/1.5.0/
 make ipa
 # -> packages/ipa/KiouForge-patched.ipa
 
@@ -252,9 +257,9 @@ Before building after editing hook sites or after a KIOU update:
 
 ```sh
 # verify current recipe against a specific version's dump + IPA
-PYTHONPATH=shared:vendor/KIOU-Hook TARGET_VERSION=1.1.0 python3 -m tools.verify_sites \
+PYTHONPATH=shared:vendor/KIOU-Hook TARGET_VERSION=1.5.0 python3 -m tools.verify_sites \
   --recipe recipes \
-  --index  assets/1.1.0/dump.cs.index.json \
-  --ipa    assets/1.1.0/Kiou-1.1.0.ipa
+  --index  assets/1.5.0/dump.cs.index.json \
+  --ipa    assets/1.5.0/Kiou-1.5.0.ipa
 ```
 
